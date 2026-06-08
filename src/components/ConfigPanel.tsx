@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
 import type { ComponentOption } from '../store/useConfiguratorStore';
+import { useShallow } from 'zustand/shallow';
 import { supabase } from '../lib/supabaseClient';
 
 export const ConfigPanel: React.FC = () => {
@@ -20,7 +21,25 @@ export const ConfigPanel: React.FC = () => {
     isReadOnly,
     replacingComponentUuid,
     setReplacingComponentUuid,
-  } = useConfiguratorStore();
+  } = useConfiguratorStore(
+    useShallow((state) => ({
+      placedComponents: state.placedComponents,
+      selectedComponentUuid: state.selectedComponentUuid,
+      selectComponent: state.selectComponent,
+      removeComponentFromScene: state.removeComponentFromScene,
+      updateComponentPosition: state.updateComponentPosition,
+      updateComponentRotation: state.updateComponentRotation,
+      toggleComponentOption: state.toggleComponentOption,
+      totalPrice: state.totalPrice,
+      validationWarnings: state.validationWarnings,
+      transportType: state.transportType,
+      params: state.params,
+      t: state.t,
+      isReadOnly: state.isReadOnly,
+      replacingComponentUuid: state.replacingComponentUuid,
+      setReplacingComponentUuid: state.setReplacingComponentUuid,
+    }))
+  );
 
   const [dbOptions, setDbOptions] = useState<ComponentOption[]>([]);
   const [loadingOptions, setLoadingOptions] = useState<boolean>(false);
