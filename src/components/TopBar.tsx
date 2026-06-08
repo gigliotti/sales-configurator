@@ -211,9 +211,10 @@ export const TopBar: React.FC = () => {
           doc.text(c.name, 18, yOffset);
           doc.text(c.code || '-', 75, yOffset);
           
-          let locName = 'Infeed';
-          if (c.locationId === 0) locName = 'Pallet Infeed';
-          else if (c.locationId === 1) locName = 'Pallet Outfeed';
+          let locName = t('location.others', 'Otros');
+          if (c.locationId === 0) locName = t('location.pallet_infeed', 'Pallet Infeed');
+          else if (c.locationId === 1) locName = t('location.pallet_outfeed', 'Pallet Outfeed');
+          else if (c.locationId === 2) locName = t('location.product_infeed', 'Product Infeed');
           doc.text(locName, 110, yOffset);
 
           const optionsSummary = c.options.map((o) => o.name).join(', ') || 'Ninguno';

@@ -239,14 +239,14 @@ INSERT INTO component_product_types (component_id, product_type_id) VALUES
 -- ============================================
 
 INSERT INTO components (id, component_type_id, code, name, available, location_id, price_eur, model_id, model_path) VALUES
-(39, 5, '7500.0051', 'VSW-MB',       true, 1, 8318.00, NULL, NULL),
+(39, 5, '7500.0051', 'VSW-MB',       true, 1, 8318.00, 'VSW', '/3d/Wrapper/vsw/vsw.glb'),
 (40, 5, 'VE051089',  'Wrapper ASM',  true, 1, 58025.00, 'RollerWrapper_VE051089', '/3d/Modules/Wrapper/RollerWrapper_VE051089.glb'),
 (41, 5, NULL,         'VAW-1',       true, 1, 77551.00, NULL, NULL),
 (42, 5, NULL,         'VAW-1 XL',    true, 1, 77551.00, NULL, NULL),
 (43, 5, NULL,         'VAW-2',       true, 1, 68405.00, NULL, NULL),
 (44, 5, NULL,         'VAW-2 XL',    true, 1, 68405.00, NULL, NULL),
 (45, 5, NULL,         'VAW-3',       true, 1, NULL, NULL, NULL),
-(46, 5, 'VE045490',  'VTW',          true, 1, NULL, 'ChainWrapper_VE045490', '/3d/Modules/Wrapper/ChainWrapper_VE045490.glb');
+(46, 5, 'VE045490',  'VTW',          true, 1, NULL, 'vtw', '/3d/Wrapper/vtw/vtw.glb');
 
 INSERT INTO wrapper_specs (component_id, max_pallet_length_mm, max_pallet_width_mm, max_wrap_height_mm, max_load_kg, wrap_speed_units_per_hour) VALUES
 (39, 1250, 1250, 2500, 1750, 20),
@@ -276,7 +276,7 @@ INSERT INTO component_transport_types (component_id, transport_type_id) VALUES
 
 INSERT INTO components (id, component_type_id, code, name, available, location_id, price_eur, model_id, model_path) VALUES
 (47, 6, 'VE045467', 'Turn Unit CC', true, 1, 36000.00, 'TurnUnit_VE045467', '/3d/Modules/Pallet/TurnUnit_VE045467.glb'),
-(48, 6, 'VE052849', 'Turn Unit RC', true, 1, 10340.00, NULL, NULL);
+(48, 6, 'VE052849', 'Turn Unit RC', true, 1, 10340.00, 'TurnUnit_VE052849', '/3d/Modules/Pallet/TurnUnit_VE052849.glb');
 
 INSERT INTO turn_unit_specs (component_id, max_pallet_width_mm, max_weight_kg, rotation_direction, rotation_degrees) VALUES
 (47, 1350, 650, 'AMBAS', 90),
@@ -292,11 +292,11 @@ INSERT INTO component_transport_types (component_id, transport_type_id) VALUES
 -- ============================================
 
 INSERT INTO components (id, component_type_id, code, name, available, location_id, price_eur, model_id, model_path) VALUES
-(49, 7, 'VE045476',  'VPD ASM (Chacabuco)', true, 0, NULL, NULL, NULL),
+(49, 7, 'VE045476',  'VPD ASM (Chacabuco)', true, 0, NULL, 'PalletDispenser_VE045476', '/3d/Modules/PalletDispenser/PalletDispenser_VE045476.glb'),
 (50, 7, '7200.5004', 'VPM MW',              true, 0, 22784.00, 'PalletDispenser_7200-5004', '/3d/Modules/PalletDispenser/PalletDispenser_7200-5004.glb'),
-(51, 7, 'VE038655',  'VPD ASM',             true, 0, 10230.00, NULL, NULL),
+(51, 7, 'VE038655',  'VPD ASM',             true, 0, 10230.00, 'PalletDispenser_VE038655', '/3d/Modules/PalletDispenser/PalletDispenser_VE038655.glb'),
 (52, 7, '7200.0401', 'VPD Fork',            true, 0, 19645.00, 'PalletDispenser_7200-0401', '/3d/Modules/PalletDispenser/PalletDispenser_7200-0401.glb'),
-(53, 7, 'VE060979',  'VPD Fork XL',         true, 0, 19645.00, NULL, NULL),
+(53, 7, 'VE060979',  'VPD Fork XL',         true, 0, 19645.00, 'PalletDispenser_VE0060979', '/3d/Modules/PalletDispenser/PalletDispenser_VE0060979.glb'),
 (54, 7, 'VE027117',  'VPD ASM (Norte)',      true, 0, NULL, 'PalletDispenser_VE027117', '/3d/Modules/PalletDispenser/PalletDispenser_VE027117.glb');
 
 INSERT INTO pallet_dispenser_specs (component_id, max_pallet_length_mm, max_pallet_width_mm, orientation_id, max_stacking_units, max_weight_kg) VALUES
@@ -323,7 +323,7 @@ INSERT INTO component_transport_types (component_id, transport_type_id) VALUES
 INSERT INTO components (id, component_type_id, code, name, available, location_id, price_eur, model_id, model_path) VALUES
 (55, 8, '7300.1021', 'Sheet Dispenser 7300.1021', true, 0, 14739.00, NULL, NULL),
 (56, 8, '7300.1022', 'Sheet Dispenser 7300.1022', true, 0, 12116.00, NULL, NULL),
-(57, 8, '7200.5023', 'Sheet Dispenser 7200.5023', true, 0, 13889.00, NULL, NULL),
+(57, 8, '7200.5023', 'Sheet Dispenser 7200.5023', true, 0, 13889.00, 'SheetDispenser_7200-5023', '/3d/Modules/SheetDispenser/SheetDispenser_7200-5023.glb'),
 (58, 8, 'VE045494',  'Sheet Dispenser VE045494', true, 0, NULL, 'SheetDispenser_VE045494', '/3d/Modules/SheetDispenser/SheetDispenser_VE045494.glb');
 
 INSERT INTO sheet_dispenser_specs (component_id, max_pallet_length_mm, max_pallet_width_mm, orientation_id, max_sheet_stack_mm) VALUES
@@ -344,9 +344,9 @@ INSERT INTO component_transport_types (component_id, transport_type_id) VALUES
 -- ============================================
 
 INSERT INTO components (id, component_type_id, code, name, available, location_id, price_eur, model_id, model_path) VALUES
-(59, 9, 'VE086516', 'V-LOAD 500',  true, 2, 48255.00, NULL, NULL),
-(60, 9, 'VE089871', 'V-PACK 500',  true, 2, 39665.00, NULL, NULL),
-(61, 9, 'VE089423', 'V-WEIGH 500', true, 2, 38454.00, NULL, NULL);
+(59, 9, 'VE086516', 'V-LOAD 500',  true, 2, 48255.00, 'v-load_500', '/3d/EndOfLine/v-load_500/v-load_500.glb'),
+(60, 9, 'VE089871', 'V-PACK 500',  true, 2, 39665.00, 'v-pack_500', '/3d/EndOfLine/v-pack_500/v-pack_500.glb'),
+(61, 9, 'VE089423', 'V-WEIGH 500', true, 2, 38454.00, 'v-weight_500', '/3d/EndOfLine/v-weight_500/v-weight_500.glb');
 
 INSERT INTO end_of_line_specs (component_id, capacity_units_per_min) VALUES
 (59, 8), (60, 10), (61, 8);
@@ -502,6 +502,65 @@ INSERT INTO infeed_coupling_compatibility (coupling_code, infeed_id, available, 
 ('64165', 33, true, 1200, 400, 8000, 1000, 0),
 ('64165', 35, true, 1200, 400, 8000, 1000, 0);
 
+
+-- ============================================
+-- ACCESSORY & SAFETY NEW COMPONENTS (IDs 66+)
+-- ============================================
+
+INSERT INTO components (id, component_type_id, code, name, available, location_id, price_eur, model_id, model_path) VALUES
+(66, 12, 'VE052181', 'Light Curtain Access Protection', true, NULL, NULL, 'LightCurtainAccessProtection_VE052181', '/3d/Modules/Safety/LightCurtainAccessProtection_VE052181.glb'),
+(67, 12, 'VE052181', 'Light Curtain', true, NULL, NULL, 'LightCurtain_VE052181', '/3d/Modules/Safety/LightCurtain_VE052181.glb'),
+(68, 12, 'VE52199', 'Light Curtain VE52199', true, NULL, NULL, 'LightCurtain_VE52199', '/3d/Modules/Safety/LightCurtain_VE52199.glb'),
+(69, 12, 'VE054396', 'Safety Fencing', true, NULL, NULL, 'SafetyFencing_VE054396', '/3d/Modules/Safety/SafetyFencing_VE054396.glb'),
+(70, 13, 'VE033540', 'Platform VE033540', true, NULL, NULL, 'Plataform_VE033540', '/3d/Modules/Safety/Plataform_VE033540.glb'),
+(71, 13, 'VE045468', 'Platform VE045468', true, NULL, NULL, 'Plataform_VE045468', '/3d/Modules/Safety/Plataform_VE045468.glb'),
+(72, 13, 'VE055250', 'Platform VE055250', true, NULL, NULL, 'Plataform_VE055250', '/3d/Modules/Safety/Plataform_VE055250.glb'),
+(73, 14, 'VE055206', 'Bridge VE055206', true, NULL, NULL, 'Bridge_VE055206', '/3d/Modules/SupportFrame/Bridge_VE055206.glb'),
+(74, 14, 'VE023968', 'Infeed Section VE023968', true, NULL, NULL, 'InfeedSection_VE023968', '/3d/Modules/SupportFrame/InfeedSection_VE023968.glb'),
+(75, 14, 'VE045438', 'Infeed Section VE045438 (Support)', true, NULL, NULL, 'InfeedSection_VE045438_SF', '/3d/Modules/SupportFrame/InfeedSection_VE045438.glb'),
+(76, 14, 'VE024277', 'Support Frame VE024277', true, NULL, NULL, 'SupportFrame_VE024277', '/3d/Modules/ProductTransport/SupportFrame_VE024277.glb'),
+(77, 2, 'VE025863', 'Conveyor VE025863', true, NULL, NULL, 'Conveyor_VE025863', '/3d/Modules/Conveyor/Conveyor_VE025863.glb'),
+(78, 2, 'VE055303', 'Conveyor VE055303', true, NULL, NULL, 'Conveyor_VE055303', '/3d/Modules/Conveyor/Conveyor_VE055303.glb'),
+(79, 2, 'VE54815', 'Conveyor VE54815', true, NULL, NULL, 'Conveyor_VE54815', '/3d/Modules/Conveyor/Conveyor_VE54815.glb'),
+(80, 3, 'VE026505', 'Infeed Section VE026505', true, NULL, NULL, 'InfeedSection_VE026505', '/3d/Modules/Infeed/InfeedSection_VE026505.glb'),
+(81, 5, '7500.2101', 'VAW Wrapper 7500.2101', true, NULL, NULL, 'VAWWrapper_7500-2101', '/3d/Modules/Wrapper/VAWWrapper_7500-2101.glb');
+
+-- New components product and transport types compatibility (Universal: RODILLO & CADENA, CAJA & BOLSA)
+INSERT INTO component_transport_types (component_id, transport_type_id) VALUES
+(66, 1), (66, 2),
+(67, 1), (67, 2),
+(68, 1), (68, 2),
+(69, 1), (69, 2),
+(70, 1), (70, 2),
+(71, 1), (71, 2),
+(72, 1), (72, 2),
+(73, 1), (73, 2),
+(74, 1), (74, 2),
+(75, 1), (75, 2),
+(76, 1), (76, 2),
+(77, 1), (77, 2),
+(78, 1), (78, 2),
+(79, 1), (79, 2),
+(80, 1), (80, 2),
+(81, 1), (81, 2);
+
+INSERT INTO component_product_types (component_id, product_type_id) VALUES
+(66, 1), (66, 2),
+(67, 1), (67, 2),
+(68, 1), (68, 2),
+(69, 1), (69, 2),
+(70, 1), (70, 2),
+(71, 1), (71, 2),
+(72, 1), (72, 2),
+(73, 1), (73, 2),
+(74, 1), (74, 2),
+(75, 1), (75, 2),
+(76, 1), (76, 2),
+(77, 1), (77, 2),
+(78, 1), (78, 2),
+(79, 1), (79, 2),
+(80, 1), (80, 2),
+(81, 1), (81, 2);
 
 -- Reset sequence to avoid conflicts with future inserts
 SELECT setval('components_id_seq', (SELECT MAX(id) FROM components));

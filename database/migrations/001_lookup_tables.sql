@@ -107,7 +107,10 @@ INSERT INTO component_types (name, label_key) VALUES
     ('sheet_dispenser',  'component.sheet_dispenser'),    -- 8
     ('end_of_line',      'component.end_of_line'),        -- 9
     ('collar',           'component.collar'),             -- 10
-    ('main_frame',       'component.main_frame')          -- 11
+    ('main_frame',       'component.main_frame'),          -- 11
+    ('safety',           'component.safety'),             -- 12
+    ('platform',         'component.platform'),           -- 13
+    ('support_frame',    'component.support_frame')       -- 14
 ON CONFLICT (name) DO NOTHING;
 
 -- Connection types

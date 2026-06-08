@@ -42,7 +42,13 @@ INSERT INTO translations (key, language, value) VALUES
     ('component.collar',            'es', 'Collar'),
     ('component.collar',            'en', 'Collar'),
     ('component.main_frame',        'es', 'Estructura Principal'),
-    ('component.main_frame',        'en', 'Main Frame')
+    ('component.main_frame',        'en', 'Main Frame'),
+    ('component.safety',            'es', 'Seguridad'),
+    ('component.safety',            'en', 'Safety'),
+    ('component.platform',          'es', 'Plataforma'),
+    ('component.platform',          'en', 'Platform'),
+    ('component.support_frame',     'es', 'Estructura de Soporte'),
+    ('component.support_frame',     'en', 'Support Frame')
 ON CONFLICT (key, language) DO UPDATE SET value = EXCLUDED.value;
 
 -- ============================================
@@ -54,7 +60,11 @@ INSERT INTO translations (key, language, value) VALUES
     ('location.pallet_outfeed', 'es', 'Salida de Pallets'),
     ('location.pallet_outfeed', 'en', 'Pallet Outfeed'),
     ('location.product_infeed', 'es', 'Entrada de Producto'),
-    ('location.product_infeed', 'en', 'Product Infeed')
+    ('location.product_infeed', 'en', 'Product Infeed'),
+    ('location.others',         'es', 'Otros'),
+    ('location.others',         'en', 'Others'),
+    ('sidebar.tab_others',      'es', 'Otros'),
+    ('sidebar.tab_others',      'en', 'Others')
 ON CONFLICT (key, language) DO UPDATE SET value = EXCLUDED.value;
 
 -- ============================================
