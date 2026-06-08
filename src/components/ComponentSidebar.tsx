@@ -33,7 +33,7 @@ export const ComponentSidebar: React.FC = () => {
     }))
   );
 
-  const [activeLocationTab, setActiveLocationTab] = useState<number>(0); // 0 = Infeed Pallet, 1 = Outfeed Pallet, 2 = Product Infeed
+  const [activeLocationTab, setActiveLocationTab] = useState<number>(0); // 0 = Infeed Pallet, 1 = Outfeed Pallet, 2 = Product Infeed, 3 = Otros
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [prevReplacingUuid, setPrevReplacingUuid] = useState<string | null>(null);
 
@@ -41,8 +41,11 @@ export const ComponentSidebar: React.FC = () => {
     setPrevReplacingUuid(replacingComponentUuid);
     if (replacingComponentUuid) {
       const compToReplace = placedComponents.find((c) => c.uuid === replacingComponentUuid);
-      if (compToReplace && compToReplace.locationId !== activeLocationTab) {
-        setActiveLocationTab(compToReplace.locationId);
+      if (compToReplace) {
+        const targetTab = (compToReplace.locationId === null || compToReplace.locationId > 2 || compToReplace.locationId < 0) ? 3 : compToReplace.locationId;
+        if (targetTab !== activeLocationTab) {
+          setActiveLocationTab(targetTab);
+        }
       }
     }
   }
@@ -61,7 +64,12 @@ export const ComponentSidebar: React.FC = () => {
     if (comp.component_type_name === 'palletizer' && placedPalletizer && !isReplacingPalletizer) return false;
 
     // 2. Filter by Location Tab
-    if (comp.location_id !== activeLocationTab) return false;
+    if (activeLocationTab === 3) {
+      if (comp.location_id === 0 || comp.location_id === 1 || comp.location_id === 2) return false;
+      if (!comp.model_path || !comp.model_path.toLowerCase().endsWith('.glb')) return false;
+    } else {
+      if (comp.location_id !== activeLocationTab) return false;
+    }
 
     // 3. Filter by Product Type Format (CAJA/BOLSA)
     if (comp.product_types.length > 0 && !comp.product_types.includes(params.productType)) {
@@ -108,7 +116,8 @@ export const ComponentSidebar: React.FC = () => {
   const getLocationName = (id: number) => {
     if (id === 0) return t('location.pallet_infeed', 'Pallet Infeed');
     if (id === 1) return t('location.pallet_outfeed', 'Pallet Outfeed');
-    return t('location.product_infeed', 'Product Infeed');
+    if (id === 2) return t('location.product_infeed', 'Product Infeed');
+    return t('location.others', 'Otros');
   };
 
   return (
@@ -150,30 +159,36 @@ export const ComponentSidebar: React.FC = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           backgroundColor: 'rgba(0,0,0,0.15)',
           borderBottom: '1px solid hsl(var(--border-color))',
         }}
       >
-        {[0, 1, 2].map((id) => {
+        {[0, 1, 2, 3].map((id) => {
           const isActive = activeLocationTab === id;
           return (
             <button
               key={id}
               onClick={() => setActiveLocationTab(id)}
               style={{
-                padding: '12px 6px',
+                padding: '12px 2px',
                 background: isActive ? 'hsl(var(--bg-tertiary))' : 'transparent',
                 border: 'none',
                 borderBottom: isActive ? '2px solid hsl(var(--brand-primary))' : '2px solid transparent',
                 color: isActive ? 'hsl(var(--text-primary))' : 'hsl(var(--text-muted))',
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: isActive ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
             >
-              {id === 0 ? t('sidebar.tab_pallet_in', 'Pallet In') : id === 1 ? t('sidebar.tab_pallet_out', 'Pallet Out') : t('sidebar.tab_product_in', 'Product In')}
+              {id === 0
+                ? t('sidebar.tab_pallet_in', 'Pallet In')
+                : id === 1
+                ? t('sidebar.tab_pallet_out', 'Pallet Out')
+                : id === 2
+                ? t('sidebar.tab_product_in', 'Product In')
+                : t('sidebar.tab_others', 'Otros')}
             </button>
           );
         })}
