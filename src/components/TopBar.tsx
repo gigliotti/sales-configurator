@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useShallow } from 'zustand/shallow';
 
 export const TopBar: React.FC = () => {
   const {
@@ -24,7 +25,31 @@ export const TopBar: React.FC = () => {
     isReadOnly,
     shareToken,
     currentProjectId,
-  } = useConfiguratorStore();
+  } = useConfiguratorStore(
+    useShallow((state) => ({
+      setStep: state.setStep,
+      projectName: state.projectName,
+      clientName: state.clientName,
+      clientEmail: state.clientEmail,
+      placedComponents: state.placedComponents,
+      totalPrice: state.totalPrice,
+      params: state.params,
+      saveProject: state.saveProject,
+      clearScene: state.clearScene,
+      activeProfile: state.activeProfile,
+      language: state.language,
+      setLanguage: state.setLanguage,
+      t: state.t,
+      lines: state.lines,
+      activeLineId: state.activeLineId,
+      setActiveLineId: state.setActiveLineId,
+      addLine: state.addLine,
+      deleteLine: state.deleteLine,
+      isReadOnly: state.isReadOnly,
+      shareToken: state.shareToken,
+      currentProjectId: state.currentProjectId,
+    }))
+  );
 
   const [saving, setSaving] = useState<boolean>(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);

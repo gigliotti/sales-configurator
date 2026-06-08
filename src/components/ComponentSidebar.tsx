@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useShallow } from 'zustand/shallow';
 
 export const ComponentSidebar: React.FC = () => {
   const {
@@ -15,7 +16,22 @@ export const ComponentSidebar: React.FC = () => {
     isReadOnly,
     replacingComponentUuid,
     replaceComponent,
-  } = useConfiguratorStore();
+  } = useConfiguratorStore(
+    useShallow((state) => ({
+      catalog: state.catalog,
+      placedComponents: state.placedComponents,
+      addComponentToScene: state.addComponentToScene,
+      params: state.params,
+      transportType: state.transportType,
+      infeedCompatibilities: state.infeedCompatibilities,
+      mainFrameCompatibilities: state.mainFrameCompatibilities,
+      t: state.t,
+      activeLineId: state.activeLineId,
+      isReadOnly: state.isReadOnly,
+      replacingComponentUuid: state.replacingComponentUuid,
+      replaceComponent: state.replaceComponent,
+    }))
+  );
 
   const [activeLocationTab, setActiveLocationTab] = useState<number>(0); // 0 = Infeed Pallet, 1 = Outfeed Pallet, 2 = Product Infeed
   const [searchQuery, setSearchQuery] = useState<string>('');

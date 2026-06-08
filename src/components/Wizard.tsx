@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useConfiguratorStore, type CatalogComponent } from '../store/useConfiguratorStore';
+import { useShallow } from 'zustand/shallow';
 
 export const Wizard: React.FC = () => {
   const {
@@ -18,7 +19,25 @@ export const Wizard: React.FC = () => {
     setStep,
     t,
     isReadOnly,
-  } = useConfiguratorStore();
+  } = useConfiguratorStore(
+    useShallow((state) => ({
+      params: state.params,
+      setParams: state.setParams,
+      projectName: state.projectName,
+      clientName: state.clientName,
+      clientEmail: state.clientEmail,
+      setProjectMeta: state.setProjectMeta,
+      loadCatalog: state.loadCatalog,
+      catalog: state.catalog,
+      recommendedPalletizers: state.recommendedPalletizers,
+      fetchRecommendations: state.fetchRecommendations,
+      selectPalletizer: state.selectPalletizer,
+      loading: state.loading,
+      setStep: state.setStep,
+      t: state.t,
+      isReadOnly: state.isReadOnly,
+    }))
+  );
 
   const [activeTab, setActiveTab] = useState<'project' | 'product' | 'pallet' | 'recommendations'>('project');
   const [selectedPalletizer, setSelectedPalletizer] = useState<CatalogComponent | null>(null);

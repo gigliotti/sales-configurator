@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useShallow } from 'zustand/shallow';
 
 interface ComponentType {
   id: number;
@@ -128,7 +129,12 @@ const SPEC_TABLE_MAP: Record<string, string> = {
 };
 
 export const CatalogAdminPanel: React.FC = () => {
-  const { setStep, loadCatalog } = useConfiguratorStore();
+  const { setStep, loadCatalog } = useConfiguratorStore(
+    useShallow((state) => ({
+      setStep: state.setStep,
+      loadCatalog: state.loadCatalog,
+    }))
+  );
 
   // Reference tables data
   const [componentTypes, setComponentTypes] = useState<ComponentType[]>([]);

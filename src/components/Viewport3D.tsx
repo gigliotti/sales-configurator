@@ -1,10 +1,14 @@
 import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, TransformControls } from '@react-three/drei';
-import { Group } from 'three';
+import { OrbitControls, TransformControls, useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useShallow } from 'zustand/shallow';
 import { ModelLoader } from './ModelLoader';
+
+// Enable global Three.js cache for loaded assets
+THREE.Cache.enabled = true;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TransformControlsAny = TransformControls as any;
@@ -18,12 +22,33 @@ export const Viewport3D: React.FC = () => {
     updateComponentRotation,
     activeLineId,
     isReadOnly,
-  } = useConfiguratorStore();
+    catalog,
+  } = useConfiguratorStore(
+    useShallow((state) => ({
+      placedComponents: state.placedComponents,
+      selectedComponentUuid: state.selectedComponentUuid,
+      selectComponent: state.selectComponent,
+      updateComponentPosition: state.updateComponentPosition,
+      updateComponentRotation: state.updateComponentRotation,
+      activeLineId: state.activeLineId,
+      isReadOnly: state.isReadOnly,
+      catalog: state.catalog,
+    }))
+  );
+
+  // Pre-load all 3D assets in the catalog to populate cache and avoid lazy-load lag
+  React.useEffect(() => {
+    catalog.forEach((comp) => {
+      if (comp.model_path) {
+        useGLTF.preload(comp.model_path);
+      }
+    });
+  }, [catalog]);
 
   const [transformMode, setTransformMode] = React.useState<'translate' | 'rotate'>('translate');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = React.useRef<any>(null);
-  const [transformTarget, setTransformTarget] = React.useState<Group | null>(null);
+  const [transformTarget, setTransformTarget] = React.useState<THREE.Group | null>(null);
 
   const handleComponentClick = (e: ThreeEvent<MouseEvent>, uuid: string) => {
     e.stopPropagation();

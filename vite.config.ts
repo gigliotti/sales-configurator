@@ -10,5 +10,20 @@ export default defineConfig({
   cacheDir: path.join(os.tmpdir(), 'vite-cache-3d-sales'),
   build: {
     emptyOutDir: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('three') || id.includes('@react-three')) {
+              return 'vendor-3d';
+            }
+            if (id.includes('jspdf')) {
+              return 'vendor-pdf';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 })

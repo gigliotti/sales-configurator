@@ -548,7 +548,7 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
 
       if (compError) throw compError;
 
-      // Fetch all specifications tables to map metadata
+      // Fetch all specifications tables and N:M compatibility tables in parallel
       const specsMap: Record<string, Record<string, unknown>[]> = {};
       const specTables = [
         'palletizer_specs', 'conveyor_specs', 'manipulator_specs',
@@ -557,14 +557,24 @@ export const useConfiguratorStore = create<ConfiguratorState>((set, get) => ({
         'main_frame_specs'
       ];
 
-      for (const table of specTables) {
-        const { data } = await supabase.from(table).select('*');
-        if (data) specsMap[table] = data as Record<string, unknown>[];
-      }
+      const [specsResults, infeedCompResult, mainFrameCompResult] = await Promise.all([
+        Promise.all(
+          specTables.map(async (table) => {
+            const { data } = await supabase.from(table).select('*');
+            return { table, data };
+          })
+        ),
+        supabase.from('infeed_palletizer_compatibility').select('*'),
+        supabase.from('main_frame_palletizer_compatibility').select('*')
+      ]);
 
-      // Fetch N:M compatibility tables
-      const { data: infeedComp } = await supabase.from('infeed_palletizer_compatibility').select('*');
-      const { data: mainFrameComp } = await supabase.from('main_frame_palletizer_compatibility').select('*');
+      specsResults.forEach(({ table, data }) => {
+        if (data) specsMap[table] = data as Record<string, unknown>[];
+      });
+
+      const infeedComp = infeedCompResult.data;
+      const mainFrameComp = mainFrameCompResult.data;
+
 
       const formattedCatalog: CatalogComponent[] = (components as unknown as DBComponent[]).map((comp) => {
         const transport_types = comp.component_transport_types

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useShallow } from 'zustand/shallow';
 
 export const Lobby: React.FC = () => {
   const {
@@ -21,7 +22,28 @@ export const Lobby: React.FC = () => {
     t,
     login,
     logout,
-  } = useConfiguratorStore();
+  } = useConfiguratorStore(
+    useShallow((state) => ({
+      setStep: state.setStep,
+      loading: state.loading,
+      projectsList: state.projectsList,
+      favoriteProjectIds: state.favoriteProjectIds,
+      activeProfile: state.activeProfile,
+      profiles: state.profiles,
+      setActiveProfile: state.setActiveProfile,
+      loadProfiles: state.loadProfiles,
+      loadProjectsList: state.loadProjectsList,
+      toggleFavoriteProject: state.toggleFavoriteProject,
+      loadProject: state.loadProject,
+      deleteProject: state.deleteProject,
+      resetConfiguratorState: state.resetConfiguratorState,
+      language: state.language,
+      setLanguage: state.setLanguage,
+      t: state.t,
+      login: state.login,
+      logout: state.logout,
+    }))
+  );
 
   const [activeTab, setActiveTab] = useState<'mine' | 'others' | 'favorites'>('mine');
   const [searchQuery, setSearchQuery] = useState<string>('');
