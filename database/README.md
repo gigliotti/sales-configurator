@@ -1,5 +1,19 @@
 # Database — Configurador 3D de Paletizado Verbruggen
 
+Esta aplicación es un **Configurador 3D de Sistemas de Paletizado** diseñado específicamente para Verbruggen.
+
+### ¿Para qué sirve esta aplicación?
+En términos sencillos, la aplicación permite diseñar y cotizar de forma visual e interactiva (en 3D) líneas de paletizado completas (la maquinaria y cintas transportadoras que organizan sacos, cajas o productos en palets de forma automática para su distribución).
+
+Con esta herramienta se puede:
+* **Diseñar visualmente:** Armar y conectar diferentes componentes (paletizadores, cintas transportadoras, envolvedoras de film, dispensadores de palets vacíos, etc.) en un espacio interactivo 3D.
+* **Cotizar proyectos:** Calcular el costo estimado del sistema de manera automática a medida que se agregan o quitan componentes.
+* **Gestionar versiones:** Crear y guardar múltiples propuestas o alternativas de diseño para cada cliente.
+* **Administrar el catálogo:** Mantener actualizado el catálogo de maquinaria, precios, archivos 3D y especificaciones técnicas de los componentes.
+* **Compartir y colaborar:** Permitir que los vendedores diseñen propuestas y las compartan con los clientes para su visualización y aprobación.
+
+---
+
 ## Stack
 - **Supabase** (PostgreSQL 15+)
 - **Supabase Auth** (email/password, magic link)
