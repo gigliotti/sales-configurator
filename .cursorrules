@@ -44,7 +44,7 @@ Siempre que se trabaje en una tarea de este repositorio, el agente **debe consul
 ## 🚦 Reglas de Validación
 * Antes de completar cualquier cambio en el código:
   1. Verificar que los tipos de TypeScript estén completos y sin `any` innecesarios.
-  2. Asegurar que las migraciones de base de datos sigan la nomenclatura secuencial en `database/migrations/`.
+  2. Asegurar que las migraciones de base de datos se creen en `supabase/migrations/` (fuente de verdad, nomenclatura con timestamp del CLI de Supabase); `database/` es solo copia documental.
   3. Ejecutar los linters y formateadores configurados en el proyecto.
 
 ---
@@ -52,5 +52,5 @@ Siempre que se trabaje en una tarea de este repositorio, el agente **debe consul
 ## 🚀 Despliegue en Internet (Deployment Skill)
 * **Comando del Proyecto:** `npm run deploy`
 * **Directiva para Agentes (AI Directive):** Si el usuario solicita un despliegue (por ejemplo, diciendo `/deploy` o pidiendo publicar cambios), el agente **debe ejecutar** el comando `npm run deploy` para compilar y subir los cambios a Vercel.
-* **Seguridad y Configuración:** Este comando requiere la variable `VERCEL_TOKEN` definida en el archivo local `.env` (el cual está protegido por `.gitignore` y `.vercelignore` para evitar filtraciones del token).
+* **Seguridad y Configuración:** Este comando requiere la variable `VERCEL_TOKEN` definida en el archivo local `.env`. Actualmente `.env` está excluido por `.gitignore` y `.vercelignore`, pero eso NO siempre fue así: el `.env` llegó a estar commiteado y sus secretos se consideran comprometidos (ver `SECURITY.md` para la rotación de credenciales y la purga del historial). Regla absoluta: **prohibido commitear secretos** (tokens, claves, `.env` con valores reales) en cualquier archivo del repositorio; los valores de ejemplo van solo en `.env.example`.
 
