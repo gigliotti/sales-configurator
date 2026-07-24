@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
+
+# Secretos y variables de entorno (NUNCA commitear)
+.env
+.env.*
+!.env.example
+
+# Material de referencia local (exportes HTML de hojas de cálculo)
+Tablas BD/
+
+# Supabase CLI temporales
+supabase/.temp/
+
+# Python auxiliar
+__pycache__/
+*.pyc

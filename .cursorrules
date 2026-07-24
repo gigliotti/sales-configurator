@@ -1,0 +1,56 @@
+# Reglas del Proyecto y Uso de Habilidades (Skills)
+
+Este proyecto utiliza el configurador 3D de paletizado de Verbruggen. Para asegurar consistencia y calidad, se deben seguir y cargar las siguientes habilidades (*skills*) de `antigravity-awesome-skills` según el módulo en el que se esté trabajando.
+
+## 🛠️ Directiva General
+Siempre que se trabaje en una tarea de este repositorio, el agente **debe consultar y aplicar las directrices, arquitecturas y playbooks** de los siguientes skills instalados localmente en `C:\Users\camet\.agents\skills\`:
+
+---
+
+## 📌 Asignación de Habilidades por Componente
+
+### 1. Visualización y Renderizado 3D (React Three Fiber & Three.js)
+* **Ubicación:** `src/components/Viewport3D.tsx`, `src/components/ModelLoader.tsx`, `src/components/Wizard.tsx`
+* **Skills obligatorios a aplicar:**
+  * `threejs-fundamentals` (Conceptos generales de R3F)
+  * `threejs-loaders` (Para la carga optimizada y asíncrona de modelos 3D)
+  * `threejs-interaction` (Para snapping, arrastre de componentes y colisiones)
+  * `threejs-lighting` y `threejs-materials` (Para estética visual realista)
+  * `3d-web-experience` (Para optimizar la interacción usuario-escena)
+
+### 2. Base de Datos y Backend (Supabase & Postgres)
+* **Ubicación:** `database/`, `supabase/`
+* **Skills obligatorios a aplicar:**
+  * `database-migrations-sql-migrations` (Flujo estructurado de migraciones)
+  * `database-design` y `database-architect` (Herencia de tablas de componentes)
+  * `postgres-best-practices` y `postgresql` (Funciones de base de datos, triggers y consultas eficientes)
+  * `supabase-automation` (RLS - Row Level Security y autenticación de usuarios)
+
+### 3. Estado Global y Lógica Frontend (React, Zustand & TypeScript)
+* **Ubicación:** `src/store/`, `src/components/`
+* **Skills obligatorios a aplicar:**
+  * `zustand-store-ts` (Para diseñar stores tipados con Zustand)
+  * `typescript-pro` y `typescript-expert` (Tipado estricto en toda la aplicación)
+  * `react-best-practices` y `react-patterns` (Estructura de componentes y ciclos de vida limpios)
+
+### 4. Estética Visual y UI Premium
+* **Ubicación:** `src/index.css`, `src/App.css` y archivos de estilos
+* **Skills obligatorios a aplicar:**
+  * `high-end-visual-design` (Layouts limpios, paletas de colores armónicas, micro-animaciones)
+  * `ui-ux-pro-max` (Optimización de usabilidad en flujos de configuradores y asistentes interactivos)
+
+---
+
+## 🚦 Reglas de Validación
+* Antes de completar cualquier cambio en el código:
+  1. Verificar que los tipos de TypeScript estén completos y sin `any` innecesarios.
+  2. Asegurar que las migraciones de base de datos sigan la nomenclatura secuencial en `database/migrations/`.
+  3. Ejecutar los linters y formateadores configurados en el proyecto.
+
+---
+
+## 🚀 Despliegue en Internet (Deployment Skill)
+* **Comando del Proyecto:** `npm run deploy`
+* **Directiva para Agentes (AI Directive):** Si el usuario solicita un despliegue (por ejemplo, diciendo `/deploy` o pidiendo publicar cambios), el agente **debe ejecutar** el comando `npm run deploy` para compilar y subir los cambios a Vercel.
+* **Seguridad y Configuración:** Este comando requiere la variable `VERCEL_TOKEN` definida en el archivo local `.env` (el cual está protegido por `.gitignore` y `.vercelignore` para evitar filtraciones del token).
+
