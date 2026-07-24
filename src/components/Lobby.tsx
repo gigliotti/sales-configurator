@@ -5,8 +5,8 @@ import type { ProjectStatus } from '../store/useConfiguratorStore';
 import { useShallow } from 'zustand/shallow';
 import { ConfirmDialog } from './ui/Modal';
 import { formatEUR, toNumber } from '../lib/format';
-import { clearDraft, readDraft } from '../hooks/useAutosaveDraft';
-import type { DraftPayload } from '../hooks/useAutosaveDraft';
+import { clearDraft, readDraft } from '../lib/draftStorage';
+import type { DraftPayload } from '../lib/draftStorage';
 
 const PAGE_SIZE = 12;
 

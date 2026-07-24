@@ -17,15 +17,30 @@ export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children, ma
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
+  // onClose se lee desde un ref para que el efecto principal dependa solo de
+  // `open`: los onClose inline (p. ej. en TopBar) cambian de identidad en cada
+  // re-render y re-ejecutarían el efecto, robando el foco a mitad de tipeo.
+  // Este es exactamente el caso de uso del patrón "latest ref".
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
-    previouslyFocused.current = document.activeElement as HTMLElement | null;
-    cardRef.current?.focus();
+    // Guarda el elemento previamente enfocado solo si está FUERA del modal,
+    // para que la restauración al cerrar enfoque al botón que lo abrió; y
+    // enfoca el card solo como fallback: si un hijo con autoFocus (input de
+    // PromptDialog, botón de ConfirmDialog) ya tomó el foco, no robárselo.
+    if (!cardRef.current?.contains(document.activeElement)) {
+      previouslyFocused.current = document.activeElement as HTMLElement | null;
+      cardRef.current?.focus();
+    }
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -33,7 +48,7 @@ export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children, ma
       document.removeEventListener('keydown', onKeyDown);
       previouslyFocused.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

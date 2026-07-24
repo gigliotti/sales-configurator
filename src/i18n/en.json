@@ -207,6 +207,7 @@
   "toast.no_permission_save": "You do not have permission to save this project.",
   "toast.duplicated": "Project duplicated as an unsaved copy.",
   "toast.status_updated": "Project status updated.",
+  "toast.status_error": "The status could not be updated (permissions)",
   "toast.share_regenerated": "Share link regenerated.",
   "toast.share_revoked": "Share link revoked.",
   "toast.share_error": "The share link could not be updated.",

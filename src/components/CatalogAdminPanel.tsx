@@ -198,6 +198,11 @@ export const CatalogAdminPanel: React.FC = () => {
   const [specFormValues, setSpecFormValues] = useState<Record<string, any>>({});
   const [loadingSpecs, setLoadingSpecs] = useState(false);
 
+  // Contador de peticiones de specs: al clickar A y B rápido, la respuesta
+  // (lenta) de A podría pisar el formulario de B. Cada selección incrementa el
+  // contador y las respuestas con un id obsoleto se descartan.
+  const specRequestRef = useRef(0);
+
   // Fetch initial data
   const fetchData = async () => {
     setLoading(true);
@@ -267,6 +272,7 @@ export const CatalogAdminPanel: React.FC = () => {
 
   // Handle component selection
   const handleSelectComponent = async (comp: CatalogComponent) => {
+    const requestId = ++specRequestRef.current;
     setErrorMsg(null);
     setIsCreatingNew(false);
     setSelectedComponent(comp);
@@ -305,6 +311,9 @@ export const CatalogAdminPanel: React.FC = () => {
           .select('*')
           .eq('component_id', comp.id);
 
+        // Descarta respuestas obsoletas: el usuario ya seleccionó otra cosa.
+        if (specRequestRef.current !== requestId) return;
+
         if (error) throw error;
         if (specs && specs.length > 0) {
           setSpecFormValues(specs[0]);
@@ -312,10 +321,13 @@ export const CatalogAdminPanel: React.FC = () => {
           setSpecFormValues({});
         }
       } catch (err) {
+        if (specRequestRef.current !== requestId) return;
         console.error('Error loading specs:', err);
         setSpecFormValues({});
       } finally {
-        setLoadingSpecs(false);
+        if (specRequestRef.current === requestId) {
+          setLoadingSpecs(false);
+        }
       }
     } else {
       setSpecFormValues({});
@@ -324,6 +336,8 @@ export const CatalogAdminPanel: React.FC = () => {
 
   // Handle click on "+ Add Component"
   const handleAddNewTrigger = () => {
+    // Invalida cualquier carga de specs en vuelo para que no pise el formulario nuevo.
+    specRequestRef.current++;
     setErrorMsg(null);
     setSelectedComponent(null);
     setIsCreatingNew(true);
@@ -1226,6 +1240,8 @@ export const CatalogAdminPanel: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    // Invalida cualquier carga de specs en vuelo al cancelar la edición.
+                    specRequestRef.current++;
                     setSelectedComponent(null);
                     setIsCreatingNew(false);
                     setErrorMsg(null);

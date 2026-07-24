@@ -28,10 +28,13 @@ function locationLabel(locationId: number, t: TranslateFn): string {
 
 /** Escapa un campo CSV: comillas dobles si contiene separador, comillas o saltos de línea. */
 function csvField(value: string): string {
-  if (/[";\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Neutraliza la inyección de fórmulas: Excel ejecuta celdas que empiezan
+  // por =, +, -, @ o tabulador; prefijar una comilla simple fuerza texto.
+  const safe = /^[=+\-@\t]/.test(value) ? `'${value}` : value;
+  if (/[";\n\r]/.test(safe)) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return value;
+  return safe;
 }
 
 /**

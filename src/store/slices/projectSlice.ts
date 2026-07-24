@@ -109,7 +109,8 @@ export interface ProjectSlice {
   getSnapshot: () => ProjectSnapshot;
   restoreSnapshot: (snapshot: ProjectSnapshot) => void;
   duplicateProjectAsNew: () => void;
-  updateProjectStatus: (projectId: string, status: ProjectStatus) => Promise<void>;
+  /** Devuelve true si el estado se actualizó; false si falló (p. ej. RLS afectó 0 filas). */
+  updateProjectStatus: (projectId: string, status: ProjectStatus) => Promise<boolean>;
   loadVersions: (projectId: string) => Promise<ProjectVersion[]>;
   regenerateShareToken: (expiresAt?: string | null) => Promise<string | null>;
   revokeShareToken: () => Promise<void>;
@@ -135,14 +136,19 @@ export const createProjectSlice: StateCreator<ConfiguratorState, [], [], Project
   },
 
   restoreSnapshot: (snapshot) => {
+    // Derivar params/transportType de la línea que queda activa (misma lógica que
+    // setActiveLineId/loadProject) para no dejar estado desincronizado.
+    const lines = snapshot.lines?.length ? snapshot.lines : [{ ...DEFAULT_LINE }];
+    const activeLine = lines[0];
     set({
       projectName: snapshot.projectName ?? 'Nueva Cotización',
       clientName: snapshot.clientName ?? '',
       clientEmail: snapshot.clientEmail ?? '',
-      lines: snapshot.lines?.length ? snapshot.lines : [{ ...DEFAULT_LINE }],
-      activeLineId: snapshot.lines?.[0]?.id ?? DEFAULT_LINE.id,
+      lines,
+      activeLineId: activeLine.id,
       placedComponents: snapshot.placedComponents ?? [],
-      params: snapshot.params ?? defaultParams,
+      params: activeLine.params ?? snapshot.params ?? defaultParams,
+      transportType: activeLine.transportType ?? 'RODILLO',
       selectedComponentUuid: null,
       replacingComponentUuid: null,
       _historyPast: [],
@@ -789,16 +795,24 @@ export const createProjectSlice: StateCreator<ConfiguratorState, [], [], Project
 
   updateProjectStatus: async (projectId, status) => {
     try {
-      const { error } = await supabase
+      // .select('id') permite verificar cuántas filas afectó el UPDATE: con RLS,
+      // un no-dueño afecta 0 filas sin error y la UI no debe reportar éxito.
+      const { data, error } = await supabase
         .from('projects')
         .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', projectId);
+        .eq('id', projectId)
+        .select('id');
       if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) {
+        throw new Error('No tienes permisos para modificar este proyecto');
+      }
       set((state) => ({
         projectsList: state.projectsList.map((p) => (p.id === projectId ? { ...p, status } : p)),
       }));
+      return true;
     } catch (err) {
       console.error('Error updating project status:', err);
+      return false;
     }
   },
 
@@ -837,11 +851,16 @@ export const createProjectSlice: StateCreator<ConfiguratorState, [], [], Project
       }
       // Fallback directo (RLS del dueño sigue aplicando)
       const token = crypto.randomUUID();
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('projects')
         .update({ share_token: token })
-        .eq('id', projectId);
+        .eq('id', projectId)
+        .select('id');
       if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) {
+        // RLS afectó 0 filas: no fijar un token que no existe en la BD.
+        return null;
+      }
       set({ shareToken: token });
       return token;
     } catch (err) {
@@ -863,11 +882,17 @@ export const createProjectSlice: StateCreator<ConfiguratorState, [], [], Project
         }
         if (!isMissingFunctionError(error)) throw new Error(error.message);
       }
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('projects')
         .update({ share_token: null })
-        .eq('id', projectId);
+        .eq('id', projectId)
+        .select('id');
       if (error) throw error;
+      if (Array.isArray(data) && data.length === 0) {
+        // RLS afectó 0 filas: el token sigue vigente en la BD, no tocar el estado local.
+        console.warn('revokeShareToken: 0 filas afectadas (sin permisos sobre el proyecto)');
+        return;
+      }
       set({ shareToken: null });
     } catch (err) {
       console.error('Error revoking share token:', err);

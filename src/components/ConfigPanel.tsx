@@ -49,9 +49,16 @@ export const ConfigPanel: React.FC = () => {
 
   const selectedComp = placedComponents.find((c) => c.uuid === selectedComponentUuid);
 
+  // Primitivos estables para las dependencias del efecto: selectedComp cambia
+  // de identidad en cada tick de slider (posición/rotación) y provocaría un
+  // refetch a Supabase por cada movimiento.
+  const selUuid = selectedComp?.uuid;
+  const selId = selectedComp?.id;
+  const selType = selectedComp?.componentType;
+
   // Fetch options dynamically based on component type and ID
   useEffect(() => {
-    if (!selectedComp) {
+    if (!selUuid) {
       return;
     }
 
@@ -60,12 +67,12 @@ export const ConfigPanel: React.FC = () => {
       setLoadingOptions(true);
       try {
         let data: ComponentOption[] | null = [];
-        
-        if (selectedComp.componentType === 'conveyor') {
+
+        if (selType === 'conveyor') {
           // Find transport type ID
           const tName = transportType;
           const { data: tt } = await supabase.from('transport_types').select('id').eq('name', tName).single();
-          
+
           if (tt) {
             const { data: acc } = await supabase
               .from('conveyor_accessories')
@@ -73,29 +80,29 @@ export const ConfigPanel: React.FC = () => {
               .eq('transport_type_id', tt.id);
             data = acc as ComponentOption[];
           }
-        } else if (selectedComp.componentType === 'infeed') {
+        } else if (selType === 'infeed') {
           const { data: coup } = await supabase
             .from('infeed_coupling_compatibility')
             .select('*')
-            .eq('infeed_id', selectedComp.id);
+            .eq('infeed_id', selId);
           data = coup as ComponentOption[];
-        } else if (selectedComp.componentType === 'main_frame') {
+        } else if (selType === 'main_frame') {
           const { data: cfg } = await supabase
             .from('main_frame_configurations')
             .select('*')
-            .eq('main_frame_id', selectedComp.id);
+            .eq('main_frame_id', selId);
           data = cfg as ComponentOption[];
-        } else if (selectedComp.componentType === 'turn_unit') {
+        } else if (selType === 'turn_unit') {
           const { data: cfg } = await supabase
             .from('turn_unit_configurations')
             .select('*')
-            .eq('turn_unit_id', selectedComp.id);
+            .eq('turn_unit_id', selId);
           data = cfg as ComponentOption[];
-        } else if (selectedComp.componentType === 'wrapper') {
+        } else if (selType === 'wrapper') {
           const { data: cfg } = await supabase
             .from('wrapper_configurations')
             .select('*')
-            .eq('wrapper_id', selectedComp.id);
+            .eq('wrapper_id', selId);
           data = cfg as ComponentOption[];
         }
 
@@ -117,7 +124,7 @@ export const ConfigPanel: React.FC = () => {
       active = false;
       setDbOptions([]);
     };
-  }, [selectedComp, transportType]);
+  }, [selUuid, selId, selType, transportType]);
 
   const handlePositionChange = (axis: 0 | 2, val: number) => {
     if (!selectedComp) return;

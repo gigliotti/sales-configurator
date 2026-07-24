@@ -8,6 +8,7 @@ import { generateQuotePdf } from '../lib/pdfExport';
 import { exportBomCsv } from '../lib/csvExport';
 import { Modal, ConfirmDialog, PromptDialog } from './ui/Modal';
 import { VersionHistoryModal } from './VersionHistoryModal';
+import { clearDraft } from '../lib/draftStorage';
 
 const PROJECT_STATUSES: ProjectStatus[] = ['draft', 'sent', 'approved', 'rejected'];
 
@@ -124,6 +125,7 @@ export const TopBar: React.FC = () => {
     const res = await saveProject();
     setSaving(false);
     if (res.success) {
+      clearDraft();
       showToast('success', t('toast.save_success', 'Cotización guardada correctamente.'));
     } else {
       showToast('error', `${t('toast.save_error', 'Error al guardar la cotización. Inténtalo de nuevo.')} (${res.error})`);
@@ -161,12 +163,18 @@ export const TopBar: React.FC = () => {
   const handleStatusChange = async (status: ProjectStatus) => {
     if (!currentProjectId) return;
     setLocalStatus(status);
-    await updateProjectStatus(currentProjectId, status);
+    const ok = await updateProjectStatus(currentProjectId, status);
+    if (!ok) {
+      setLocalStatus(null);
+      showToast('error', t('toast.status_error', 'No se pudo actualizar el estado (permisos)'));
+      return;
+    }
     showToast('success', t('toast.status_updated', 'Estado del proyecto actualizado.'));
   };
 
   const handleDuplicate = () => {
     duplicateProjectAsNew();
+    navigate('/editor', { replace: true });
     showToast('success', t('toast.duplicated', 'Proyecto duplicado como copia sin guardar.'));
   };
 

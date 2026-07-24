@@ -38,6 +38,13 @@ const HISTORY_LIMIT = 50;
 /** Ventana para agrupar cambios continuos (sliders/gizmo) en una sola entrada de undo. */
 const HISTORY_COALESCE_MS = 800;
 
+/** Entrada del historial undo/redo: escena + líneas + línea activa (deleteLine muta las tres). */
+export interface SceneHistoryEntry {
+  placedComponents: PlacedComponent[];
+  lines: ProductionLine[];
+  activeLineId: string | null;
+}
+
 export interface SceneSlice {
   step: AppStep;
   params: ClientParams;
@@ -50,9 +57,9 @@ export interface SceneSlice {
   lines: ProductionLine[];
   activeLineId: string | null;
 
-  // Historial undo/redo (solo la escena de componentes)
-  _historyPast: PlacedComponent[][];
-  _historyFuture: PlacedComponent[][];
+  // Historial undo/redo (escena de componentes + líneas)
+  _historyPast: SceneHistoryEntry[];
+  _historyFuture: SceneHistoryEntry[];
   _lastHistoryKey: string | null;
   _lastHistoryAt: number;
   canUndo: boolean;
@@ -85,8 +92,19 @@ export interface SceneSlice {
   setActiveLineId: (id: string | null) => void;
 }
 
-const cloneScene = (comps: PlacedComponent[]): PlacedComponent[] =>
-  JSON.parse(JSON.stringify(comps)) as PlacedComponent[];
+const cloneHistoryEntry = (entry: SceneHistoryEntry): SceneHistoryEntry =>
+  JSON.parse(JSON.stringify(entry)) as SceneHistoryEntry;
+
+const snapshotHistoryEntry = (state: {
+  placedComponents: PlacedComponent[];
+  lines: ProductionLine[];
+  activeLineId: string | null;
+}): SceneHistoryEntry =>
+  cloneHistoryEntry({
+    placedComponents: state.placedComponents,
+    lines: state.lines,
+    activeLineId: state.activeLineId,
+  });
 
 export const createSceneSlice: StateCreator<ConfiguratorState, [], [], SceneSlice> = (set, get) => {
   /** Guarda el estado actual de la escena antes de una mutación. */
@@ -101,7 +119,7 @@ export const createSceneSlice: StateCreator<ConfiguratorState, [], [], SceneSlic
       set({ _lastHistoryAt: now });
       return;
     }
-    const past = [...state._historyPast, cloneScene(state.placedComponents)].slice(-HISTORY_LIMIT);
+    const past = [...state._historyPast, snapshotHistoryEntry(state)].slice(-HISTORY_LIMIT);
     set({
       _historyPast: past,
       _historyFuture: [],
@@ -419,48 +437,68 @@ export const createSceneSlice: StateCreator<ConfiguratorState, [], [], SceneSlic
     },
 
     undo: () => {
-      const { _historyPast, _historyFuture, placedComponents } = get();
+      const current = get();
+      const { _historyPast, _historyFuture } = current;
       if (_historyPast.length === 0) return;
       const previous = _historyPast[_historyPast.length - 1];
       const past = _historyPast.slice(0, -1);
-      const future = [..._historyFuture, cloneScene(placedComponents)].slice(-HISTORY_LIMIT);
-      const validUuids = new Set(previous.map((c) => c.uuid));
-      set((state) => ({
-        placedComponents: previous,
-        _historyPast: past,
-        _historyFuture: future,
-        _lastHistoryKey: null,
-        canUndo: past.length > 0,
-        canRedo: true,
-        selectedComponentUuid:
-          state.selectedComponentUuid && validUuids.has(state.selectedComponentUuid)
-            ? state.selectedComponentUuid
-            : null,
-        replacingComponentUuid: null,
-      }));
+      const future = [..._historyFuture, snapshotHistoryEntry(current)].slice(-HISTORY_LIMIT);
+      const validUuids = new Set(previous.placedComponents.map((c) => c.uuid));
+      set((state) => {
+        const targetLine = previous.lines.find((l) => l.id === previous.activeLineId);
+        return {
+          placedComponents: previous.placedComponents,
+          lines: previous.lines,
+          activeLineId: previous.activeLineId,
+          params: targetLine
+            ? targetLine.params || { ...state.params, productType: targetLine.productType }
+            : state.params,
+          transportType: targetLine ? targetLine.transportType || 'RODILLO' : state.transportType,
+          _historyPast: past,
+          _historyFuture: future,
+          _lastHistoryKey: null,
+          canUndo: past.length > 0,
+          canRedo: true,
+          selectedComponentUuid:
+            state.selectedComponentUuid && validUuids.has(state.selectedComponentUuid)
+              ? state.selectedComponentUuid
+              : null,
+          replacingComponentUuid: null,
+        };
+      });
       get().validateScene();
     },
 
     redo: () => {
-      const { _historyPast, _historyFuture, placedComponents } = get();
+      const current = get();
+      const { _historyPast, _historyFuture } = current;
       if (_historyFuture.length === 0) return;
       const next = _historyFuture[_historyFuture.length - 1];
       const future = _historyFuture.slice(0, -1);
-      const past = [..._historyPast, cloneScene(placedComponents)].slice(-HISTORY_LIMIT);
-      const validUuids = new Set(next.map((c) => c.uuid));
-      set((state) => ({
-        placedComponents: next,
-        _historyPast: past,
-        _historyFuture: future,
-        _lastHistoryKey: null,
-        canUndo: true,
-        canRedo: future.length > 0,
-        selectedComponentUuid:
-          state.selectedComponentUuid && validUuids.has(state.selectedComponentUuid)
-            ? state.selectedComponentUuid
-            : null,
-        replacingComponentUuid: null,
-      }));
+      const past = [..._historyPast, snapshotHistoryEntry(current)].slice(-HISTORY_LIMIT);
+      const validUuids = new Set(next.placedComponents.map((c) => c.uuid));
+      set((state) => {
+        const targetLine = next.lines.find((l) => l.id === next.activeLineId);
+        return {
+          placedComponents: next.placedComponents,
+          lines: next.lines,
+          activeLineId: next.activeLineId,
+          params: targetLine
+            ? targetLine.params || { ...state.params, productType: targetLine.productType }
+            : state.params,
+          transportType: targetLine ? targetLine.transportType || 'RODILLO' : state.transportType,
+          _historyPast: past,
+          _historyFuture: future,
+          _lastHistoryKey: null,
+          canUndo: true,
+          canRedo: future.length > 0,
+          selectedComponentUuid:
+            state.selectedComponentUuid && validUuids.has(state.selectedComponentUuid)
+              ? state.selectedComponentUuid
+              : null,
+          replacingComponentUuid: null,
+        };
+      });
       get().validateScene();
     },
 

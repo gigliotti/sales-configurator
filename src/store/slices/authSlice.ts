@@ -82,9 +82,14 @@ export const createAuthSlice: StateCreator<ConfiguratorState, [], [], AuthSlice>
   },
 
   initAuthListener: () => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      deleteRequestHeader('x-share-token');
-      set({ isReadOnly: false, shareToken: null });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Limpiar el estado de vista compartida SOLO en transiciones reales de sesión.
+      // Eventos como INITIAL_SESSION o TOKEN_REFRESHED no deben borrar la cabecera
+      // x-share-token, de la que depende la vista /share/:token para pasar RLS.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        deleteRequestHeader('x-share-token');
+        set({ isReadOnly: false, shareToken: null });
+      }
       if (session?.user) {
         try {
           const { data: profile, error: profileError } = await supabase

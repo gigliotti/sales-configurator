@@ -185,6 +185,16 @@ export const Viewport3D: React.FC = () => {
   const [transformTarget, setTransformTarget] = React.useState<THREE.Group | null>(null);
   const fitCameraRef = React.useRef<(() => void) | null>(null);
 
+  // Si TransformControls se desmonta a mitad de un drag (Delete/Escape/Ctrl+Z
+  // mientras se arrastra), su onMouseUp nunca llega y OrbitControls quedaría
+  // deshabilitado para siempre: cuando el target de transformación pasa a
+  // null, re-habilitamos la órbita explícitamente.
+  React.useEffect(() => {
+    if (transformTarget === null && orbitRef.current) {
+      orbitRef.current.enabled = true;
+    }
+  }, [transformTarget]);
+
   const handleComponentClick = (e: ThreeEvent<MouseEvent>, uuid: string) => {
     e.stopPropagation();
     selectComponent(uuid);
@@ -274,6 +284,18 @@ export const Viewport3D: React.FC = () => {
                           [pos.x, pos.y, pos.z],
                           [rot.x, rot.y, rot.z]
                         );
+                        // Si el snap devuelve exactamente la posición previa,
+                        // R3F no re-aplica la prop (diff shallow de arrays) y
+                        // el mesh quedaría visualmente donde se soltó,
+                        // desincronizado del store: re-aplicamos de forma
+                        // imperativa los valores commiteados leídos del store.
+                        const committed = useConfiguratorStore
+                          .getState()
+                          .placedComponents.find((pc) => pc.uuid === c.uuid);
+                        if (committed) {
+                          transformTarget.position.set(...committed.position);
+                          transformTarget.rotation.set(...committed.rotation);
+                        }
                       }
                     }}
                   />
