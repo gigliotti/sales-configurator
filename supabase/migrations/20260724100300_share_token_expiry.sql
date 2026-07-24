@@ -14,6 +14,29 @@
 BEGIN;
 
 -- ────────────────────────────────────────────
+-- § 0  Dependencia defensiva
+-- ────────────────────────────────────────────
+-- get_x_share_token() se definió en 20260605200000, pero en entornos donde el
+-- esquema se cargó a mano por el SQL Editor esa migración puede no haberse
+-- ejecutado nunca (el historial se reparó a posteriori). Se (re)crea aquí para
+-- que esta migración sea autosuficiente.
+CREATE OR REPLACE FUNCTION public.get_x_share_token()
+RETURNS TEXT AS $$
+DECLARE
+  v_header_val TEXT;
+BEGIN
+  BEGIN
+    v_header_val := current_setting('request.headers', true)::json->>'x-share-token';
+  EXCEPTION WHEN OTHERS THEN
+    v_header_val := NULL;
+  END;
+  RETURN NULLIF(v_header_val, '');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.get_x_share_token() TO public;
+
+-- ────────────────────────────────────────────
 -- § 1  Columna de expiración
 -- ────────────────────────────────────────────
 
