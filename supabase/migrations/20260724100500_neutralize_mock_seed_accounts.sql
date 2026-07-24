@@ -18,8 +18,12 @@
 
 BEGIN;
 
+-- pgcrypto vive en el esquema "extensions" en Supabase: se califica explícitamente.
 UPDATE auth.users
-SET encrypted_password = crypt(gen_random_uuid()::text || gen_random_uuid()::text, gen_salt('bf'))
+SET encrypted_password = extensions.crypt(
+      gen_random_uuid()::text || gen_random_uuid()::text,
+      extensions.gen_salt('bf')
+    )
 WHERE id IN (
   '00000000-0000-0000-0000-000000000000',  -- admin@example.com
   '11111111-1111-1111-1111-111111111111',  -- seller1@example.com
