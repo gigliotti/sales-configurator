@@ -211,6 +211,16 @@ export const TopBar: React.FC = () => {
     whiteSpace: 'nowrap',
   };
 
+  // Iniciales para el avatar de cuenta (perfil activo o invitado).
+  const accountLabel = activeProfile?.name || activeProfile?.email || '';
+  const initials =
+    accountLabel
+      .split(/[\s@._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((s) => s[0]?.toUpperCase() ?? '')
+      .join('') || '·';
+
   return (
     <div
       className="glass-panel"
@@ -220,9 +230,10 @@ export const TopBar: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 24px',
+        padding: '0 16px',
+        gap: '14px',
         borderBottom: '1px solid hsl(var(--border-color))',
-        backgroundColor: 'hsl(var(--bg-secondary))',
+        background: 'linear-gradient(hsl(var(--bg-tertiary)), hsl(var(--bg-secondary)))',
         zIndex: 100,
       }}
     >
@@ -248,34 +259,32 @@ export const TopBar: React.FC = () => {
         </div>
       )}
 
-      {/* Project Meta Info */}
+      {/* Chrome de identidad + navegación + meta del proyecto */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-        <button
-          className="btn-secondary"
-          onClick={handleBackToLobby}
-          style={{
-            padding: '6px 12px',
-            borderRadius: '4px',
-            fontSize: '12px',
-            cursor: 'pointer',
-          }}
-        >
-          🏢 {t('topbar.lobby_panel', 'Panel')}
+        {/* Cue "ventana de app" + wordmark */}
+        <div className="sc-dots" aria-hidden="true"><i /><i /><i /></div>
+        <div className="sc-brand">
+          <span className="sq" />
+          <b>Verbruggen</b>
+          <span>Assembly · v2</span>
+        </div>
+
+        <div className="sc-vrule" />
+
+        {/* Navegación tipo pestaña */}
+        <button className="sc-tab" onClick={handleBackToLobby}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6" /></svg>
+          {t('topbar.lobby_panel', 'Panel')}
         </button>
         {!isReadOnly && (
-          <button
-            className="btn-secondary"
-            onClick={handleBackToWizard}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              cursor: 'pointer',
-            }}
-          >
-            ⬅️ {t('topbar.wizard_params', 'Parámetros')}
+          <button className="sc-tab" onClick={handleBackToWizard}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6" /></svg>
+            {t('topbar.wizard_params', 'Parámetros')}
           </button>
         )}
+
+        <div className="sc-vrule" />
+
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h1 style={{ fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -469,6 +478,15 @@ export const TopBar: React.FC = () => {
             {saving ? t('topbar.saving_btn', 'Guardando...') : `💾 ${t('topbar.save_quote_btn', 'Guardar Cotización')}`}
           </button>
         )}
+
+        {/* Avatar de cuenta */}
+        <div
+          className="sc-avatar"
+          title={accountLabel || t('lobby.anonymous', 'Invitado / Vista Pública')}
+          aria-label={accountLabel || t('lobby.anonymous', 'Invitado / Vista Pública')}
+        >
+          {initials}
+        </div>
       </div>
 
       {/* ---- Diálogo: agregar línea ---- */}
