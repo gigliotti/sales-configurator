@@ -21,9 +21,14 @@ Con esta herramienta se puede:
 
 ## Estructura
 
+> **Importante:** la fuente de verdad ejecutable es `supabase/migrations/`
+> (nombres con timestamp, aplicados por la CLI de Supabase con `supabase db push`).
+> Esta carpeta `database/` es una **copia documental** con numeración secuencial
+> para facilitar la lectura del historial; no la ejecuta ninguna herramienta.
+
 ```
 database/
-├── migrations/          # Archivos SQL ejecutados en orden
+├── migrations/          # Copia documental de las migraciones (orden secuencial)
 │   ├── 001_lookup_tables.sql        # Tablas enum (transport, product, location, etc.)
 │   ├── 002_base_components.sql      # Tabla base de componentes (arquitectura híbrida)
 │   ├── 003_component_specs.sql      # Tablas de extensión por tipo de componente
@@ -31,7 +36,13 @@ database/
 │   ├── 005_3d_and_connections.sql   # Puntos de conexión 3D
 │   ├── 006_users_and_projects.sql   # Usuarios, proyectos, líneas, versiones
 │   ├── 007_i18n.sql                 # Traducciones multi-idioma
-│   └── 008_rls_policies.sql         # Row Level Security policies
+│   ├── 008_rls_policies.sql         # Row Level Security policies
+│   ├── 009..019_*.sql               # Ajustes de RLS, favoritos, fixes varios
+│   ├── 020_remove_header_impersonation.sql  # Elimina el bypass x-active-profile-id
+│   ├── 021_save_project_rpc.sql             # RPC atómica save_project_atomic()
+│   ├── 022_catalog_rpc.sql                  # RPC get_catalog_full() (catálogo en 1 llamada)
+│   ├── 023_share_token_expiry.sql           # Expiración + regeneración/revocación de share tokens
+│   └── 024_soft_delete_and_status.sql       # Soft delete, estados nuevos e índices
 ├── seed/                # Datos iniciales
 │   └── 001_catalog_data.sql         # Catálogo completo de componentes Verbruggen
 └── README.md
@@ -91,6 +102,46 @@ Cada componente tiene un registro en `components` con campos comunes (code, name
 | admin | CRUD | CRUD (todos) | CRUD |
 | seller | Lectura | CRUD (propios) | Lectura |
 | client | Lectura | Lectura (compartidos) | Lectura |
+
+## Seguridad
+
+### Eliminación del mecanismo `x-active-profile-id` (migración 020)
+
+Durante el desarrollo existió un modo de "mock login": la función
+`get_active_profile_id()` leía el header HTTP `x-active-profile-id` y las
+políticas RLS concedían acceso al rol `anon` en base a ese valor. Eso permitía
+que **cualquier cliente sin autenticar se hiciera pasar por cualquier perfil**
+(vendedor o admin) simplemente enviando un header, con acceso de escritura a
+proyectos, líneas, componentes y perfiles.
+
+La migración `020_remove_header_impersonation.sql` elimina ese bypass:
+
+- `get_active_profile_id()` devuelve únicamente `auth.uid()`; la identidad
+  proviene siempre del JWT emitido por Supabase Auth, nunca de headers.
+- Todas las políticas que concedían acceso a `anon` vía header se recrearon
+  exigiendo `authenticated` + `auth.uid()`.
+- La lectura abierta de `user_profiles` (necesaria solo para el selector de
+  perfiles del mock login) se redujo a: perfil propio, o lectura por
+  vendedores/admins autenticados (para mostrar el dueño en listados).
+
+Qué **sí** se conserva y por qué:
+
+- **Lectura anónima del catálogo y traducciones**: el modo invitado del
+  configurador la necesita y es información pública de solo lectura.
+- **Políticas de share token (`x-share-token`)**: son de solo lectura por
+  diseño (compartir una cotización con un cliente). Desde la migración 023
+  además pueden expirar (`share_token_expires_at`), regenerarse
+  (`regenerate_share_token`) o revocarse (`revoke_share_token`).
+
+### RPCs y permisos
+
+- `save_project_atomic(payload)` — `SECURITY INVOKER`: respeta RLS; guardar
+  un proyecto ajeno falla. Solo `authenticated`.
+- `get_catalog_full()` — `SECURITY DEFINER` con `search_path` fijado: expone
+  únicamente componentes `available = true`. `anon` + `authenticated`.
+- `regenerate_share_token` / `revoke_share_token` / `soft_delete_project` /
+  `restore_project` — `SECURITY DEFINER` con verificación explícita de dueño
+  o admin sobre `auth.uid()`. Solo `authenticated`.
 
 ## Compatibilidad con sistema existente
 

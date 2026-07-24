@@ -9,5 +9,37 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+/**
+ * Cabeceras dinámicas que se inyectan en cada request REST (p. ej. x-share-token
+ * para las vistas compartidas de solo lectura). Se implementa con un fetch
+ * personalizado en lugar de tocar la API interna del cliente de supabase-js,
+ * que no es estable entre versiones.
+ */
+const dynamicHeaders = new Map<string, string>();
+
+export function setRequestHeader(key: string, value: string): void {
+  dynamicHeaders.set(key.toLowerCase(), value);
+}
+
+export function deleteRequestHeader(key: string): void {
+  dynamicHeaders.delete(key.toLowerCase());
+}
+
+export function getRequestHeader(key: string): string | undefined {
+  return dynamicHeaders.get(key.toLowerCase());
+}
+
+const headerInjectingFetch: typeof fetch = (input, init) => {
+  if (dynamicHeaders.size === 0) {
+    return fetch(input, init);
+  }
+  const headers = new Headers(init?.headers);
+  dynamicHeaders.forEach((value, key) => headers.set(key, value));
+  return fetch(input, { ...init, headers });
+};
+
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+  global: { fetch: headerInjectingFetch },
+});
+
 export default supabase;

@@ -3,6 +3,7 @@ import { useConfiguratorStore } from '../store/useConfiguratorStore';
 import type { ComponentOption } from '../store/useConfiguratorStore';
 import { useShallow } from 'zustand/shallow';
 import { supabase } from '../lib/supabaseClient';
+import { formatEUR, toNumber } from '../lib/format';
 
 export const ConfigPanel: React.FC = () => {
   const {
@@ -21,6 +22,7 @@ export const ConfigPanel: React.FC = () => {
     isReadOnly,
     replacingComponentUuid,
     setReplacingComponentUuid,
+    language,
   } = useConfiguratorStore(
     useShallow((state) => ({
       placedComponents: state.placedComponents,
@@ -38,6 +40,7 @@ export const ConfigPanel: React.FC = () => {
       isReadOnly: state.isReadOnly,
       replacingComponentUuid: state.replacingComponentUuid,
       setReplacingComponentUuid: state.setReplacingComponentUuid,
+      language: state.language,
     }))
   );
 
@@ -46,9 +49,16 @@ export const ConfigPanel: React.FC = () => {
 
   const selectedComp = placedComponents.find((c) => c.uuid === selectedComponentUuid);
 
+  // Primitivos estables para las dependencias del efecto: selectedComp cambia
+  // de identidad en cada tick de slider (posición/rotación) y provocaría un
+  // refetch a Supabase por cada movimiento.
+  const selUuid = selectedComp?.uuid;
+  const selId = selectedComp?.id;
+  const selType = selectedComp?.componentType;
+
   // Fetch options dynamically based on component type and ID
   useEffect(() => {
-    if (!selectedComp) {
+    if (!selUuid) {
       return;
     }
 
@@ -57,12 +67,12 @@ export const ConfigPanel: React.FC = () => {
       setLoadingOptions(true);
       try {
         let data: ComponentOption[] | null = [];
-        
-        if (selectedComp.componentType === 'conveyor') {
+
+        if (selType === 'conveyor') {
           // Find transport type ID
           const tName = transportType;
           const { data: tt } = await supabase.from('transport_types').select('id').eq('name', tName).single();
-          
+
           if (tt) {
             const { data: acc } = await supabase
               .from('conveyor_accessories')
@@ -70,29 +80,29 @@ export const ConfigPanel: React.FC = () => {
               .eq('transport_type_id', tt.id);
             data = acc as ComponentOption[];
           }
-        } else if (selectedComp.componentType === 'infeed') {
+        } else if (selType === 'infeed') {
           const { data: coup } = await supabase
             .from('infeed_coupling_compatibility')
             .select('*')
-            .eq('infeed_id', selectedComp.id);
+            .eq('infeed_id', selId);
           data = coup as ComponentOption[];
-        } else if (selectedComp.componentType === 'main_frame') {
+        } else if (selType === 'main_frame') {
           const { data: cfg } = await supabase
             .from('main_frame_configurations')
             .select('*')
-            .eq('main_frame_id', selectedComp.id);
+            .eq('main_frame_id', selId);
           data = cfg as ComponentOption[];
-        } else if (selectedComp.componentType === 'turn_unit') {
+        } else if (selType === 'turn_unit') {
           const { data: cfg } = await supabase
             .from('turn_unit_configurations')
             .select('*')
-            .eq('turn_unit_id', selectedComp.id);
+            .eq('turn_unit_id', selId);
           data = cfg as ComponentOption[];
-        } else if (selectedComp.componentType === 'wrapper') {
+        } else if (selType === 'wrapper') {
           const { data: cfg } = await supabase
             .from('wrapper_configurations')
             .select('*')
-            .eq('wrapper_id', selectedComp.id);
+            .eq('wrapper_id', selId);
           data = cfg as ComponentOption[];
         }
 
@@ -114,7 +124,7 @@ export const ConfigPanel: React.FC = () => {
       active = false;
       setDbOptions([]);
     };
-  }, [selectedComp, transportType]);
+  }, [selUuid, selId, selType, transportType]);
 
   const handlePositionChange = (axis: 0 | 2, val: number) => {
     if (!selectedComp) return;
@@ -144,34 +154,6 @@ export const ConfigPanel: React.FC = () => {
     return t('config.option', 'Opción');
   };
 
-  const getWarningTranslation = (message: string) => {
-    if (message.includes('Se requiere una Paletizadora')) {
-      return t('warning.no_palletizer', 'Se requiere una Paletizadora V-STACK en la línea.');
-    }
-    if (message.includes('Conflicto: El MainFrame')) {
-      return t('warning.mainframe_conflict', 'Conflicto: El MainFrame ya incluye un Sheet Dispenser integrado. Elimina el SheetDispenser externo.');
-    }
-    if (message.includes('supera el límite del Tube')) {
-      return t('warning.tube_manipulator_limit', message);
-    }
-    if (message.includes('supera el límite del Big')) {
-      return t('warning.big_manipulator_limit', message);
-    }
-    if (message.includes('exclusivos para formato BOLSA')) {
-      return t('warning.bolsa_exclusive', 'Los módulos EndOfLine (V-LOAD, V-PACK, V-WEIGH) son exclusivos para formato BOLSA.');
-    }
-    if (message.includes('supera la capacidad del transportador')) {
-      return t('warning.pallet_dim_conveyor_limit', message);
-    }
-    if (message.includes('supera el límite del envolvedor')) {
-      return t('warning.pallet_height_wrapper_limit', message);
-    }
-    if (message.includes('supera el presupuesto del cliente')) {
-      return t('warning.budget_exceeded', message);
-    }
-    return message;
-  };
-
   return (
     <div
       className="glass-panel"
@@ -197,6 +179,7 @@ export const ConfigPanel: React.FC = () => {
               </span>
               <button
                 onClick={() => selectComponent(null)}
+                aria-label={t('config.back_btn', 'Volver')}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -236,6 +219,7 @@ export const ConfigPanel: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => setReplacingComponentUuid(selectedComp.uuid)}
+                    aria-label={t('config.change_module_btn', 'Cambiar Módulo')}
                     className="btn-secondary"
                     style={{
                       width: '100%',
@@ -270,10 +254,11 @@ export const ConfigPanel: React.FC = () => {
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                <span>{t('config.position_x', 'Posición X (Lateral)')}</span>
+                <label htmlFor="config-position-x">{t('config.position_x', 'Posición X (Lateral)')}</label>
                 <span>{selectedComp.position[0].toFixed(2)}m</span>
               </div>
               <input
+                id="config-position-x"
                 type="range"
                 min="-15"
                 max="15"
@@ -287,10 +272,11 @@ export const ConfigPanel: React.FC = () => {
  
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                <span>{t('config.position_z', 'Posición Z (Frente/Fondo)')}</span>
+                <label htmlFor="config-position-z">{t('config.position_z', 'Posición Z (Frente/Fondo)')}</label>
                 <span>{selectedComp.position[2].toFixed(2)}m</span>
               </div>
               <input
+                id="config-position-z"
                 type="range"
                 min="-15"
                 max="15"
@@ -304,10 +290,11 @@ export const ConfigPanel: React.FC = () => {
  
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                <span>{t('config.rotation_y', 'Rotación Y (Ángulo)')}</span>
+                <label htmlFor="config-rotation-y">{t('config.rotation_y', 'Rotación Y (Ángulo)')}</label>
                 <span>{Math.round((selectedComp.rotation[1] * 180) / Math.PI)}°</span>
               </div>
               <input
+                id="config-rotation-y"
                 type="range"
                 min="0"
                 max="360"
@@ -377,7 +364,7 @@ export const ConfigPanel: React.FC = () => {
                         <span style={{ fontSize: '12px', paddingRight: '4px' }}>{getOptionLabel(optionType, opt)}</span>
                       </div>
                       <span style={{ fontSize: '12px', color: 'hsl(var(--brand-primary))', fontWeight: 600 }}>
-                        +€{opt.price_eur ? parseFloat(String(opt.price_eur)).toLocaleString() : '0'}
+                        +{formatEUR(toNumber(opt.price_eur), language)}
                       </span>
                     </label>
                   );
@@ -393,12 +380,13 @@ export const ConfigPanel: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'hsl(var(--text-secondary))' }}>{t('config.module_cost', 'Costo del Módulo')}</span>
               <span style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>
-                €{selectedComp.totalPrice.toLocaleString()}
+                {formatEUR(selectedComp.totalPrice, language)}
               </span>
             </div>
             {!isReadOnly && (
               <button
                 onClick={() => removeComponentFromScene(selectedComp.uuid)}
+                aria-label={t('config.delete_module_btn', 'Eliminar Módulo')}
                 className="btn-secondary"
                 style={{
                   width: '100%',
@@ -440,10 +428,10 @@ export const ConfigPanel: React.FC = () => {
           >
             <span style={{ fontSize: '12px', color: 'hsl(var(--text-secondary))' }}>{t('config.total_price_label', 'PRECIO TOTAL ESTIMADO')}</span>
             <span style={{ fontSize: '28px', fontWeight: 700, color: 'hsl(var(--brand-primary))' }}>
-              €{totalPrice.toLocaleString()}
+              {formatEUR(totalPrice, language)}
             </span>
             <span style={{ fontSize: '11px', color: 'hsl(var(--text-muted))' }}>
-              {t('config.budget_limit', 'Presupuesto Límite')}: €{params.maxBudget.toLocaleString()}
+              {t('config.budget_limit', 'Presupuesto Límite')}: {formatEUR(params.maxBudget, language)}
             </span>
           </div>
 
@@ -486,7 +474,7 @@ export const ConfigPanel: React.FC = () => {
                         lineHeight: '1.4',
                       }}
                     >
-                      {isError ? '🚨 ' : '⚠️ '} {getWarningTranslation(warn.message)}
+                      {isError ? '🚨 ' : '⚠️ '} {warn.code ? t('warning.' + warn.code, warn.message, warn.params) : warn.message}
                     </div>
                   );
                 })}

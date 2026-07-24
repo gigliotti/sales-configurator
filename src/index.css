@@ -164,6 +164,84 @@ body {
   animation: pulse-glow 2s infinite;
 }
 
+.btn-danger {
+  background: hsl(var(--state-error));
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-danger:hover {
+  filter: brightness(1.15);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 12, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modal-card {
+  background: hsl(var(--bg-secondary));
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 12px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  outline: none;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid hsl(var(--border-color));
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: hsl(var(--text-muted));
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: hsl(var(--text-primary));
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modal-btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
 /* Layout Utilities */
 .editor-layout {
   display: grid;
@@ -171,6 +249,25 @@ body {
   grid-template-rows: 64px 1fr;
   height: 100vh;
   width: 100vw;
+}
+
+/* Responsive: portátiles pequeños y tablets */
+@media (max-width: 1200px) {
+  .editor-layout {
+    grid-template-columns: 260px 1fr 300px;
+  }
+}
+
+@media (max-width: 900px) {
+  .editor-layout {
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: 64px 1fr auto;
+  }
+  /* El panel derecho pasa a fila inferior a lo ancho */
+  .editor-layout > :nth-child(4) {
+    grid-column: 1 / -1;
+    max-height: 40vh;
+  }
 }
 
 /* Custom Scrollbar for Catalog List Sidebar */

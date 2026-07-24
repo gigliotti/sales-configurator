@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useConfiguratorStore, type CatalogComponent } from '../store/useConfiguratorStore';
 import { useShallow } from 'zustand/shallow';
+import { formatEUR } from '../lib/format';
 
 export const Wizard: React.FC = () => {
   const {
@@ -19,6 +21,7 @@ export const Wizard: React.FC = () => {
     setStep,
     t,
     isReadOnly,
+    language,
   } = useConfiguratorStore(
     useShallow((state) => ({
       params: state.params,
@@ -36,8 +39,11 @@ export const Wizard: React.FC = () => {
       setStep: state.setStep,
       t: state.t,
       isReadOnly: state.isReadOnly,
+      language: state.language,
     }))
   );
+
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'project' | 'product' | 'pallet' | 'recommendations'>('project');
   const [selectedPalletizer, setSelectedPalletizer] = useState<CatalogComponent | null>(null);
@@ -69,6 +75,7 @@ export const Wizard: React.FC = () => {
   const handleStartBuilder = () => {
     if (selectedPalletizer) {
       selectPalletizer(selectedPalletizer, transportType);
+      navigate('/editor');
     }
   };
 
@@ -110,7 +117,11 @@ export const Wizard: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <button
               className="btn-secondary"
-              onClick={() => setStep('LOBBY')}
+              aria-label={t('wizard.projects_btn', 'Proyectos')}
+              onClick={() => {
+                setStep('LOBBY');
+                navigate('/projects');
+              }}
               style={{
                 padding: '6px 12px',
                 borderRadius: '4px',
@@ -195,8 +206,9 @@ export const Wizard: React.FC = () => {
                   <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>{t('wizard.project_info_title', 'Información del Proyecto y Cliente')}</h2>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.project_name', 'Nombre del Proyecto')}</label>
+                      <label htmlFor="wizard-project-name" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.project_name', 'Nombre del Proyecto')}</label>
                       <input
+                        id="wizard-project-name"
                         className="form-input"
                         type="text"
                         value={projectName}
@@ -205,8 +217,9 @@ export const Wizard: React.FC = () => {
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.client_name', 'Nombre del Cliente')}</label>
+                      <label htmlFor="wizard-client-name" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.client_name', 'Nombre del Cliente')}</label>
                       <input
+                        id="wizard-client-name"
                         className="form-input"
                         type="text"
                         placeholder={t('wizard.client_name_placeholder', 'Ej. Agrícola del Norte')}
@@ -217,8 +230,9 @@ export const Wizard: React.FC = () => {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '50%' }}>
-                    <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.client_email', 'Correo del Cliente')}</label>
+                    <label htmlFor="wizard-client-email" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.client_email', 'Correo del Cliente')}</label>
                     <input
+                      id="wizard-client-email"
                       className="form-input"
                       type="email"
                       placeholder="correo@ejemplo.com"
@@ -241,8 +255,9 @@ export const Wizard: React.FC = () => {
                   <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>{t('wizard.product_params_title', 'Parámetros del Producto')}</h2>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.format_type', 'Tipo de Formato')}</label>
+                      <label htmlFor="wizard-format-type" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.format_type', 'Tipo de Formato')}</label>
                       <select
+                        id="wizard-format-type"
                         className="form-input form-select"
                         value={params.productType}
                         disabled={isReadOnly}
@@ -253,8 +268,9 @@ export const Wizard: React.FC = () => {
                       </select>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.product_weight', 'Peso del Producto (kg)')}</label>
+                      <label htmlFor="wizard-product-weight" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.product_weight', 'Peso del Producto (kg)')}</label>
                       <input
+                        id="wizard-product-weight"
                         className="form-input"
                         type="number"
                         min="1"
@@ -267,28 +283,34 @@ export const Wizard: React.FC = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                    <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.product_dims', 'Dimensiones del Producto (mm)')}</label>
+                    <label htmlFor="wizard-product-length" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.product_dims', 'Dimensiones del Producto (mm)')}</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                       <input
+                        id="wizard-product-length"
                         className="form-input"
                         type="number"
                         placeholder={t('specs.length', 'Largo')}
+                        aria-label={t('specs.length', 'Largo')}
                         value={params.productLength}
                         disabled={isReadOnly}
                         onChange={(e) => setParams({ productLength: parseInt(e.target.value) || 0 })}
                       />
                       <input
+                        id="wizard-product-width"
                         className="form-input"
                         type="number"
                         placeholder={t('specs.width', 'Ancho')}
+                        aria-label={t('specs.width', 'Ancho')}
                         value={params.productWidth}
                         disabled={isReadOnly}
                         onChange={(e) => setParams({ productWidth: parseInt(e.target.value) || 0 })}
                       />
                       <input
+                        id="wizard-product-height"
                         className="form-input"
                         type="number"
                         placeholder={t('specs.height', 'Alto')}
+                        aria-label={t('specs.height', 'Alto')}
                         value={params.productHeight}
                         disabled={isReadOnly}
                         onChange={(e) => setParams({ productHeight: parseInt(e.target.value) || 0 })}
@@ -297,8 +319,9 @@ export const Wizard: React.FC = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '50%', marginTop: '10px' }}>
-                    <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.required_speed', 'Velocidad Requerida (unidades/minuto)')}</label>
+                    <label htmlFor="wizard-desired-speed" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.required_speed', 'Velocidad Requerida (unidades/minuto)')}</label>
                     <input
+                      id="wizard-desired-speed"
                       className="form-input"
                       type="number"
                       min="1"
@@ -325,21 +348,25 @@ export const Wizard: React.FC = () => {
                   <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>{t('wizard.pallet_specs_title', 'Especificaciones de Pallet y Línea')}</h2>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.pallet_dims', 'Dimensiones del Pallet (mm)')}</label>
+                      <label htmlFor="wizard-pallet-length" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.pallet_dims', 'Dimensiones del Pallet (mm)')}</label>
                       <div style={{ display: 'flex', gap: '10px' }}>
                         <input
+                          id="wizard-pallet-length"
                           className="form-input"
                           type="number"
                           placeholder={t('specs.length', 'Largo')}
+                          aria-label={t('specs.length', 'Largo')}
                           value={params.palletLength}
                           style={{ flex: 1 }}
                           disabled={isReadOnly}
                           onChange={(e) => setParams({ palletLength: parseInt(e.target.value) || 0 })}
                         />
                         <input
+                          id="wizard-pallet-width"
                           className="form-input"
                           type="number"
                           placeholder={t('specs.width', 'Ancho')}
+                          aria-label={t('specs.width', 'Ancho')}
                           value={params.palletWidth}
                           style={{ flex: 1 }}
                           disabled={isReadOnly}
@@ -349,8 +376,9 @@ export const Wizard: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.units_per_layer', 'Unidades por Capa (Línea Base)')}</label>
+                      <label htmlFor="wizard-units-per-layer" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.units_per_layer', 'Unidades por Capa (Línea Base)')}</label>
                       <input
+                        id="wizard-units-per-layer"
                         className="form-input"
                         type="number"
                         value={params.unitsPerLayer}
@@ -362,8 +390,9 @@ export const Wizard: React.FC = () => {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '10px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.total_load_height', 'Altura Total de Carga (mm)')}</label>
+                      <label htmlFor="wizard-total-height" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.total_load_height', 'Altura Total de Carga (mm)')}</label>
                       <input
+                        id="wizard-total-height"
                         className="form-input"
                         type="number"
                         placeholder="Ej. 1800"
@@ -374,8 +403,9 @@ export const Wizard: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.max_budget', 'Presupuesto Estimado (€)')}</label>
+                      <label htmlFor="wizard-max-budget" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.max_budget', 'Presupuesto Estimado (€)')}</label>
                       <input
+                        id="wizard-max-budget"
                         className="form-input"
                         type="number"
                         step="1000"
@@ -387,8 +417,9 @@ export const Wizard: React.FC = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '50%', marginTop: '10px' }}>
-                    <label style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.preferred_wrap', 'Envoltura de Pallet Preferida')}</label>
+                    <label htmlFor="wizard-preferred-wrap" style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))' }}>{t('wizard.preferred_wrap', 'Envoltura de Pallet Preferida')}</label>
                     <select
+                      id="wizard-preferred-wrap"
                       className="form-input form-select"
                       value={params.preferredWrapType}
                       disabled={isReadOnly}
@@ -420,7 +451,11 @@ export const Wizard: React.FC = () => {
                   <div>
                     <h2 style={{ fontSize: '20px', fontWeight: 600 }}>{t('wizard.compatible_palletizers_title', 'Palletizadoras V-STACK Compatibles')}</h2>
                     <p style={{ fontSize: '14px', color: 'hsl(var(--text-secondary))', marginTop: '4px' }}>
-                      {t('wizard.recommendations_desc', `En base a la velocidad de ${params.desiredSpeed} u/min, formato ${params.productType} y peso de ${params.productWeight} kg:`)}
+                      {t(
+                        'wizard.recommendations_desc',
+                        `En base a la velocidad de ${params.desiredSpeed} u/min, formato ${params.productType} y peso de ${params.productWeight} kg:`,
+                        { speed: params.desiredSpeed, productType: params.productType, weight: params.productWeight }
+                      )}
                     </p>
                   </div>
 
@@ -456,6 +491,7 @@ export const Wizard: React.FC = () => {
                     >
                       {recommendedPalletizers.map((p) => {
                         const isSelected = selectedPalletizer?.id === p.id;
+                        const isOverBudget = p.price_eur > params.maxBudget;
                         return (
                           <div
                             key={p.id}
@@ -490,8 +526,24 @@ export const Wizard: React.FC = () => {
                             <div style={{ fontSize: '13px', color: 'hsl(var(--text-secondary))', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               <div>🚀 {t('specs.speed', 'Velocidad')}: {p.specs.max_production_rate} u/m max</div>
                               <div>📐 {t('specs.layer_length', 'Largo Capa')}: {p.specs.max_layer_length_mm} mm max</div>
-                              <div>💰 {t('specs.base_price', 'Precio Base')}: €{p.price_eur ? p.price_eur.toLocaleString() : t('specs.pending', 'Pendiente')}</div>
+                              <div>💰 {t('specs.base_price', 'Precio Base')}: {p.price_eur ? formatEUR(p.price_eur, language) : t('specs.pending', 'Pendiente')}</div>
                             </div>
+                            {isOverBudget && (
+                              <span
+                                style={{
+                                  alignSelf: 'flex-start',
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  backgroundColor: 'rgba(243, 156, 18, 0.12)',
+                                  border: '1px solid rgba(243, 156, 18, 0.4)',
+                                  color: 'hsl(var(--state-warning))',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                ⚠️ {t('wizard.over_budget', 'Sobre presupuesto')}
+                              </span>
+                            )}
                           </div>
                         );
                       })}

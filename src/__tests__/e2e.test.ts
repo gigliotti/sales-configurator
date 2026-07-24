@@ -75,9 +75,10 @@ describe('Verbruggen E2E Store and API Client Testing Suite', () => {
       expect(store.activeProfile).not.toBeNull();
       expect(store.activeProfile?.role).toBe('seller');
       expect(store.activeProfile?.name).toBe('Seller 1');
-      
-      // Header check
-      expect(supabase.rest.headers.get('x-active-profile-id')).toBe('11111111-1111-1111-1111-111111111111');
+
+      // Seguridad: la selección de perfil ya NO envía cabecera de suplantación;
+      // la identidad la impone RLS con auth.uid().
+      expect(supabase.rest.headers.get('x-active-profile-id')).toBeUndefined();
     });
 
     test('2. Clearing active profile resets active profile state and clears custom header', async () => {
@@ -1073,13 +1074,16 @@ describe('Verbruggen E2E Store and API Client Testing Suite', () => {
 
   describe('Tier 3: Cross-Feature Combinations', () => {
     
-    test('81. Auth + Save: Active profile simulator header is sent during project save API calls', async () => {
+    test('81. Auth + Save: Saving with an active profile assigns ownership without impersonation headers', async () => {
       const store = storeProxy;
       await store.setActiveProfile('11111111-1111-1111-1111-111111111111'); // Seller 1
-      
+
       const saveRes = await store.saveProject();
       expect(saveRes.success).toBe(true);
-      expect(supabase.rest.headers.get('x-active-profile-id')).toBe('11111111-1111-1111-1111-111111111111');
+      // La cabecera de suplantación fue eliminada por seguridad (ver SECURITY.md)
+      expect(supabase.rest.headers.get('x-active-profile-id')).toBeUndefined();
+      const savedProject = mockDb.projects.find(p => p.id === saveRes.projectId);
+      expect(savedProject?.owner_id).toBe('11111111-1111-1111-1111-111111111111');
     });
 
     test('82. Auth + Admin: Real admin role profile modifies catalog, seller role profile is rejected', async () => {

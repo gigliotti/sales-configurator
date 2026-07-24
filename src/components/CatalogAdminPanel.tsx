@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
 import { useShallow } from 'zustand/shallow';
+import { formatEUR } from '../lib/format';
 
 interface ComponentType {
   id: number;
@@ -128,11 +130,16 @@ const SPEC_TABLE_MAP: Record<string, string> = {
   main_frame: 'main_frame_specs'
 };
 
+const PAGE_SIZE = 20;
+
 export const CatalogAdminPanel: React.FC = () => {
-  const { setStep, loadCatalog } = useConfiguratorStore(
+  const navigate = useNavigate();
+  const { setStep, loadCatalog, t, language } = useConfiguratorStore(
     useShallow((state) => ({
       setStep: state.setStep,
       loadCatalog: state.loadCatalog,
+      t: state.t,
+      language: state.language,
     }))
   );
 
@@ -151,10 +158,26 @@ export const CatalogAdminPanel: React.FC = () => {
   // UI state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypeIdFilter, setSelectedTypeIdFilter] = useState('all');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Toast state (patrón TopBar: auto-descartable, sin window.alert)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  const showToast = (type: 'success' | 'error', msg: string) => {
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    setToast({ type, msg });
+    toastTimer.current = window.setTimeout(() => setToast(null), 4000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
 
   // Form State
   const [selectedComponent, setSelectedComponent] = useState<CatalogComponent | null>(null);
@@ -174,6 +197,11 @@ export const CatalogAdminPanel: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [specFormValues, setSpecFormValues] = useState<Record<string, any>>({});
   const [loadingSpecs, setLoadingSpecs] = useState(false);
+
+  // Contador de peticiones de specs: al clickar A y B rápido, la respuesta
+  // (lenta) de A podría pisar el formulario de B. Cada selección incrementa el
+  // contador y las respuestas con un id obsoleto se descartan.
+  const specRequestRef = useRef(0);
 
   // Fetch initial data
   const fetchData = async () => {
@@ -210,7 +238,7 @@ export const CatalogAdminPanel: React.FC = () => {
       setProductJunctions(pjData || []);
     } catch (err) {
       console.error('Error fetching admin data:', err);
-      setErrorMsg(err instanceof Error ? err.message : 'Error al cargar los datos del catálogo');
+      setErrorMsg(err instanceof Error ? err.message : t('admin.error_load', 'Error al cargar los datos del catálogo'));
     } finally {
       setLoading(false);
     }
@@ -228,12 +256,24 @@ export const CatalogAdminPanel: React.FC = () => {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reset pagination when the filters change (state adjustment during render,
+  // comparing against the previously rendered filter values).
+  const [prevFilters, setPrevFilters] = useState({ searchQuery, selectedTypeIdFilter });
+  if (
+    searchQuery !== prevFilters.searchQuery ||
+    selectedTypeIdFilter !== prevFilters.selectedTypeIdFilter
+  ) {
+    setPrevFilters({ searchQuery, selectedTypeIdFilter });
+    setPage(1);
+  }
 
   // Handle component selection
   const handleSelectComponent = async (comp: CatalogComponent) => {
+    const requestId = ++specRequestRef.current;
     setErrorMsg(null);
-    setSuccessMsg(null);
     setIsCreatingNew(false);
     setSelectedComponent(comp);
 
@@ -259,7 +299,7 @@ export const CatalogAdminPanel: React.FC = () => {
     setCheckedProductTypes(pTypes);
 
     // Fetch specifications on-demand
-    const typeObj = componentTypes.find((t) => t.id === comp.component_type_id);
+    const typeObj = componentTypes.find((tp) => tp.id === comp.component_type_id);
     const typeName = typeObj?.name || '';
     const specTable = SPEC_TABLE_MAP[typeName];
 
@@ -270,7 +310,10 @@ export const CatalogAdminPanel: React.FC = () => {
           .from(specTable)
           .select('*')
           .eq('component_id', comp.id);
-        
+
+        // Descarta respuestas obsoletas: el usuario ya seleccionó otra cosa.
+        if (specRequestRef.current !== requestId) return;
+
         if (error) throw error;
         if (specs && specs.length > 0) {
           setSpecFormValues(specs[0]);
@@ -278,10 +321,13 @@ export const CatalogAdminPanel: React.FC = () => {
           setSpecFormValues({});
         }
       } catch (err) {
+        if (specRequestRef.current !== requestId) return;
         console.error('Error loading specs:', err);
         setSpecFormValues({});
       } finally {
-        setLoadingSpecs(false);
+        if (specRequestRef.current === requestId) {
+          setLoadingSpecs(false);
+        }
       }
     } else {
       setSpecFormValues({});
@@ -290,8 +336,9 @@ export const CatalogAdminPanel: React.FC = () => {
 
   // Handle click on "+ Add Component"
   const handleAddNewTrigger = () => {
+    // Invalida cualquier carga de specs en vuelo para que no pise el formulario nuevo.
+    specRequestRef.current++;
     setErrorMsg(null);
-    setSuccessMsg(null);
     setSelectedComponent(null);
     setIsCreatingNew(true);
 
@@ -303,7 +350,7 @@ export const CatalogAdminPanel: React.FC = () => {
     setModelId('');
     setModelPath('');
     setAvailable(true);
-    
+
     // Default to first component type
     const defaultTypeId = componentTypes[0]?.id ? String(componentTypes[0].id) : '';
     setComponentTypeId(defaultTypeId);
@@ -348,25 +395,25 @@ export const CatalogAdminPanel: React.FC = () => {
   // Validate form inputs
   const validateForm = (): boolean => {
     if (!name.trim()) {
-      setErrorMsg('El nombre es obligatorio.');
+      setErrorMsg(t('admin.error_name_required', 'El nombre es obligatorio.'));
       return false;
     }
 
     if (!code.trim()) {
-      setErrorMsg('El código de componente es obligatorio.');
+      setErrorMsg(t('admin.error_code_required', 'El código de componente es obligatorio.'));
       return false;
     }
 
     const codeRegex = /^[a-zA-Z0-9.\-_]+$/;
     if (!codeRegex.test(code)) {
-      setErrorMsg('El código de componente debe ser alfanumérico y puede incluir guiones o puntos.');
+      setErrorMsg(t('admin.error_code_format', 'El código de componente debe ser alfanumérico y puede incluir guiones o puntos.'));
       return false;
     }
 
     if (price !== '') {
       const parsedPrice = parseFloat(price);
       if (isNaN(parsedPrice) || parsedPrice < 0) {
-        setErrorMsg('El precio debe ser un número no negativo.');
+        setErrorMsg(t('admin.error_price_invalid', 'El precio debe ser un número no negativo.'));
         return false;
       }
     }
@@ -378,7 +425,6 @@ export const CatalogAdminPanel: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    setSuccessMsg(null);
 
     if (!validateForm()) return;
 
@@ -402,17 +448,17 @@ export const CatalogAdminPanel: React.FC = () => {
             location_id: parsedLocationId,
             model_id: modelId.trim() || null,
             model_path: modelPath.trim() || null,
-            available: true,
+            available,
           })
           .select()
           .single();
 
         if (error) throw error;
-        if (!data) throw new Error('No se recibieron datos tras la inserción');
+        if (!data) throw new Error(t('admin.error_no_insert_data', 'No se recibieron datos tras la inserción'));
         componentId = data.id;
       } else {
-        if (!selectedComponent) throw new Error('No hay componente seleccionado');
-        
+        if (!selectedComponent) throw new Error(t('admin.error_no_selection', 'No hay componente seleccionado'));
+
         // Update existing component record
         const { error } = await supabase
           .from('components')
@@ -474,7 +520,7 @@ export const CatalogAdminPanel: React.FC = () => {
       }
 
       // Handle specifications table
-      const typeObj = componentTypes.find((t) => t.id === typeIdNum);
+      const typeObj = componentTypes.find((tp) => tp.id === typeIdNum);
       const typeName = typeObj?.name || '';
       const specTable = SPEC_TABLE_MAP[typeName];
 
@@ -519,7 +565,7 @@ export const CatalogAdminPanel: React.FC = () => {
               updated_at: new Date().toISOString(),
             })
             .eq('component_id', componentId);
-          
+
           if (specUpdateError) throw specUpdateError;
         } else {
           // Insert
@@ -534,26 +580,27 @@ export const CatalogAdminPanel: React.FC = () => {
         }
       }
 
-      setSuccessMsg('Componente guardado con éxito.');
-      
+      showToast('success', t('admin.save_success', 'Componente guardado con éxito.'));
+
       // Reload local data
       await fetchData();
-      
+
       // Reset selected or update to saved
       setSelectedComponent(null);
       setIsCreatingNew(false);
     } catch (err) {
       console.error('Error saving component:', err);
-      setErrorMsg(err instanceof Error ? err.message : 'Error al guardar los datos del componente');
+      setErrorMsg(err instanceof Error ? err.message : t('admin.error_save', 'Error al guardar los datos del componente'));
     } finally {
       setSaving(false);
     }
   };
 
   // Back to Lobby navigation
-  const handleBackToLobby = async () => {
+  const handleBackToLobby = () => {
     setStep('LOBBY');
-    await loadCatalog(); // Refreshes configurator cache
+    navigate('/projects');
+    void loadCatalog(); // Refreshes configurator cache
   };
 
   // Filter components list
@@ -569,6 +616,14 @@ export const CatalogAdminPanel: React.FC = () => {
     return matchesSearch && matchesType;
   });
 
+  // Client-side pagination (20 per page)
+  const totalPages = Math.max(1, Math.ceil(filteredComponents.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedComponents = filteredComponents.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
   return (
     <div
       style={{
@@ -580,6 +635,30 @@ export const CatalogAdminPanel: React.FC = () => {
         fontFamily: 'Inter, system-ui, sans-serif',
       }}
     >
+      {/* Toast alert system (patrón TopBar) */}
+      {toast && (
+        <div
+          className="animate-fade-in"
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            top: '80px',
+            right: '24px',
+            padding: '12px 20px',
+            borderRadius: '6px',
+            backgroundColor: toast.type === 'success' ? 'rgba(46, 204, 113, 0.95)' : 'rgba(231, 76, 60, 0.95)',
+            color: '#fff',
+            fontSize: '13px',
+            fontWeight: 600,
+            zIndex: 1000,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          }}
+        >
+          {toast.type === 'success' ? '✅ ' : '❌ '} {toast.msg}
+        </div>
+      )}
+
       {/* Header Bar */}
       <div
         style={{
@@ -601,21 +680,26 @@ export const CatalogAdminPanel: React.FC = () => {
               letterSpacing: '2px',
             }}
           >
-            Panel de control
+            {t('admin.panel_badge', 'Panel de control')}
           </span>
           <h1 className="title-gradient" style={{ fontSize: '24px', marginTop: '4px', fontWeight: 700 }}>
-            🛠️ Administración de Catálogo
+            🛠️ {t('admin.title', 'Administración de Catálogo')}
           </h1>
         </div>
 
-        <button className="btn-secondary" onClick={handleBackToLobby} style={{ padding: '8px 16px', borderRadius: '6px' }}>
-          ⬅️ Volver al Lobby
+        <button
+          className="btn-secondary"
+          onClick={handleBackToLobby}
+          aria-label={t('admin.back_to_lobby', 'Volver al Lobby')}
+          style={{ padding: '8px 16px', borderRadius: '6px' }}
+        >
+          ⬅️ {t('admin.back_to_lobby', 'Volver al Lobby')}
         </button>
       </div>
 
       {/* Main Panel Content */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', padding: '24px', gap: '24px' }}>
-        
+
         {/* Left column - Components list */}
         <div
           className="glass-panel"
@@ -634,7 +718,8 @@ export const CatalogAdminPanel: React.FC = () => {
           <div style={{ marginBottom: '16px' }}>
             <input
               type="text"
-              placeholder="Buscar por código o nombre..."
+              placeholder={t('admin.search_placeholder', 'Buscar por código o nombre...')}
+              aria-label={t('admin.search_placeholder', 'Buscar por código o nombre...')}
               className="form-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -644,19 +729,23 @@ export const CatalogAdminPanel: React.FC = () => {
 
           {/* Type filter */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: 'hsl(var(--text-muted))', marginBottom: '6px' }}>
-              Filtrar por tipo:
+            <label
+              htmlFor="admin-type-filter"
+              style={{ display: 'block', fontSize: '12px', color: 'hsl(var(--text-muted))', marginBottom: '6px' }}
+            >
+              {t('admin.filter_by_type', 'Filtrar por tipo:')}
             </label>
             <select
+              id="admin-type-filter"
               className="form-input"
               value={selectedTypeIdFilter}
               onChange={(e) => setSelectedTypeIdFilter(e.target.value)}
               style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
             >
-              <option value="all">Todos los tipos</option>
-              {componentTypes.map((t) => (
-                <option key={t.id} value={String(t.id)}>
-                  {t.name}
+              <option value="all">{t('admin.all_types', 'Todos los tipos')}</option>
+              {componentTypes.map((tp) => (
+                <option key={tp.id} value={String(tp.id)}>
+                  {tp.name}
                 </option>
               ))}
             </select>
@@ -666,30 +755,41 @@ export const CatalogAdminPanel: React.FC = () => {
           <button
             className="btn-primary"
             onClick={handleAddNewTrigger}
+            aria-label={t('admin.add_component', 'Añadir Componente')}
             style={{ width: '100%', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '16px' }}
           >
-            ➕ Añadir Componente
+            ➕ {t('admin.add_component', 'Añadir Componente')}
           </button>
 
           {/* Components list scrolling container */}
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {loading ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'hsl(var(--text-muted))' }}>
-                Cargando catálogo...
+                {t('admin.loading_catalog', 'Cargando catálogo...')}
               </div>
             ) : filteredComponents.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'hsl(var(--text-muted))', fontSize: '13px' }}>
-                No se encontraron componentes
+                {t('admin.no_components', 'No se encontraron componentes')}
               </div>
             ) : (
-              filteredComponents.map((comp) => {
-                const compType = componentTypes.find((t) => t.id === comp.component_type_id)?.name || '';
+              pagedComponents.map((comp) => {
+                const compType = componentTypes.find((tp) => tp.id === comp.component_type_id)?.name || '';
                 const isSelected = selectedComponent?.id === comp.id;
 
                 return (
                   <div
                     key={comp.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
+                    aria-label={`${comp.name} (${comp.code || t('admin.no_code', 'SIN CÓDIGO')})`}
                     onClick={() => handleSelectComponent(comp)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectComponent(comp);
+                      }
+                    }}
                     style={{
                       padding: '12px',
                       borderRadius: '8px',
@@ -705,7 +805,7 @@ export const CatalogAdminPanel: React.FC = () => {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))', fontWeight: 600 }}>
-                        {comp.code || 'SIN CÓDIGO'}
+                        {comp.code || t('admin.no_code', 'SIN CÓDIGO')}
                       </span>
                       <span
                         style={{
@@ -716,21 +816,72 @@ export const CatalogAdminPanel: React.FC = () => {
                           color: comp.available ? 'hsl(145, 80%, 45%)' : 'hsl(0, 80%, 60%)',
                         }}
                       >
-                        {comp.available ? 'Activo' : 'Inactivo'}
+                        {comp.available ? t('admin.active', 'Activo') : t('admin.inactive', 'Inactivo')}
                       </span>
                     </div>
                     <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '4px 0', color: 'hsl(var(--text-primary))' }}>
                       {comp.name}
                     </h3>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'hsl(var(--text-muted))' }}>
-                      <span>Tipo: {compType}</span>
-                      <span>{comp.price_eur !== null ? `€${comp.price_eur.toLocaleString()}` : 'Sin precio'}</span>
+                      <span>{t('admin.type_prefix', 'Tipo')}: {compType}</span>
+                      <span>{comp.price_eur !== null ? formatEUR(comp.price_eur, language) : t('admin.no_price', 'Sin precio')}</span>
                     </div>
                   </div>
                 );
               })
             )}
           </div>
+
+          {/* Pagination controls */}
+          {!loading && filteredComponents.length > PAGE_SIZE && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                paddingTop: '12px',
+                marginTop: '12px',
+                borderTop: '1px solid hsl(var(--border-color) / 0.4)',
+              }}
+            >
+              <button
+                type="button"
+                className="btn-secondary"
+                aria-label={t('admin.prev_page', 'Página anterior')}
+                disabled={currentPage <= 1}
+                onClick={() => setPage(currentPage - 1)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  opacity: currentPage <= 1 ? 0.4 : 1,
+                  cursor: currentPage <= 1 ? 'default' : 'pointer',
+                }}
+              >
+                ←
+              </button>
+              <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
+                {t('admin.page_of', 'Página {{page}} de {{total}}', { page: currentPage, total: totalPages })}
+              </span>
+              <button
+                type="button"
+                className="btn-secondary"
+                aria-label={t('admin.next_page', 'Página siguiente')}
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(currentPage + 1)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  opacity: currentPage >= totalPages ? 0.4 : 1,
+                  cursor: currentPage >= totalPages ? 'default' : 'pointer',
+                }}
+              >
+                →
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right column - Editor form */}
@@ -748,6 +899,7 @@ export const CatalogAdminPanel: React.FC = () => {
         >
           {errorMsg && (
             <div
+              role="alert"
               style={{
                 backgroundColor: 'rgba(231, 76, 60, 0.1)',
                 border: '1px solid hsl(var(--state-error))',
@@ -759,22 +911,6 @@ export const CatalogAdminPanel: React.FC = () => {
               }}
             >
               ⚠️ {errorMsg}
-            </div>
-          )}
-
-          {successMsg && (
-            <div
-              style={{
-                backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                border: '1px solid hsl(145, 80%, 45%)',
-                color: 'hsl(145, 80%, 45%)',
-                padding: '12px',
-                borderRadius: '6px',
-                marginBottom: '16px',
-                fontSize: '13px',
-              }}
-            >
-              ✅ {successMsg}
             </div>
           )}
 
@@ -792,22 +928,24 @@ export const CatalogAdminPanel: React.FC = () => {
               }}
             >
               <span style={{ fontSize: '48px', marginBottom: '16px' }}>⚙️</span>
-              <h3>Formulario de Edición</h3>
+              <h3>{t('admin.form_empty_title', 'Formulario de Edición')}</h3>
               <p style={{ fontSize: '13px', marginTop: '6px', maxWidth: '360px' }}>
-                Selecciona un componente de la lista de la izquierda para editar sus propiedades, o haz clic en "Añadir Componente" para crear uno nuevo.
+                {t('admin.form_empty_desc', 'Selecciona un componente de la lista de la izquierda para editar sus propiedades, o haz clic en "Añadir Componente" para crear uno nuevo.')}
               </p>
             </div>
           ) : (
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'hsl(var(--brand-primary))', borderBottom: '1px solid hsl(var(--border-color) / 0.4)', paddingBottom: '10px' }}>
-                {isCreatingNew ? 'Nuevo Componente' : `Editar Componente: ${name}`}
+                {isCreatingNew
+                  ? t('admin.new_component', 'Nuevo Componente')
+                  : t('admin.edit_component', 'Editar Componente: {{name}}', { name })}
               </h2>
 
               {/* Base Component details */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label htmlFor="comp-name" style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--text-muted))' }}>
-                    Nombre del Componente *
+                    {t('admin.field_name', 'Nombre del Componente')} *
                   </label>
                   <input
                     id="comp-name"
@@ -817,13 +955,13 @@ export const CatalogAdminPanel: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     style={{ padding: '8px 12px', borderRadius: '6px' }}
-                    placeholder="Ej. V-STACK 630"
+                    placeholder={t('admin.ph_name', 'Ej. V-STACK 630')}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label htmlFor="comp-code" style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--text-muted))' }}>
-                    Código de Componente *
+                    {t('admin.field_code', 'Código de Componente')} *
                   </label>
                   <input
                     id="comp-code"
@@ -833,13 +971,13 @@ export const CatalogAdminPanel: React.FC = () => {
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     style={{ padding: '8px 12px', borderRadius: '6px' }}
-                    placeholder="Ej. VE088035"
+                    placeholder={t('admin.ph_code', 'Ej. VE088035')}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label htmlFor="comp-price" style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--text-muted))' }}>
-                    Precio (€)
+                    {t('admin.field_price', 'Precio (€)')}
                   </label>
                   <input
                     id="comp-price"
@@ -850,13 +988,13 @@ export const CatalogAdminPanel: React.FC = () => {
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     style={{ padding: '8px 12px', borderRadius: '6px' }}
-                    placeholder="Ej. 315000"
+                    placeholder={t('admin.ph_price', 'Ej. 315000')}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label htmlFor="comp-type" style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--text-muted))' }}>
-                    Tipo de Componente *
+                    {t('admin.field_type', 'Tipo de Componente')} *
                   </label>
                   <select
                     id="comp-type"
@@ -866,9 +1004,9 @@ export const CatalogAdminPanel: React.FC = () => {
                     disabled={!isCreatingNew}
                     style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: isCreatingNew ? 'rgba(20,25,40,0.8)' : 'rgba(20,25,40,0.4)' }}
                   >
-                    {componentTypes.map((t) => (
-                      <option key={t.id} value={String(t.id)}>
-                        {t.name}
+                    {componentTypes.map((tp) => (
+                      <option key={tp.id} value={String(tp.id)}>
+                        {tp.name}
                       </option>
                     ))}
                   </select>
@@ -876,7 +1014,7 @@ export const CatalogAdminPanel: React.FC = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label htmlFor="comp-location" style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--text-muted))' }}>
-                    Ubicación (Línea)
+                    {t('admin.field_location', 'Ubicación (Línea)')}
                   </label>
                   <select
                     id="comp-location"
@@ -885,7 +1023,7 @@ export const CatalogAdminPanel: React.FC = () => {
                     onChange={(e) => setLocationId(e.target.value)}
                     style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
                   >
-                    <option value="">Ninguna / No aplica</option>
+                    <option value="">{t('admin.location_none', 'Ninguna / No aplica')}</option>
                     {locations.map((loc) => (
                       <option key={loc.id} value={String(loc.id)}>
                         {loc.name}
@@ -896,7 +1034,7 @@ export const CatalogAdminPanel: React.FC = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label htmlFor="comp-model-id" style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--text-muted))' }}>
-                    ID de Modelo 3D (Legacy)
+                    {t('admin.field_model_id', 'ID de Modelo 3D (Legacy)')}
                   </label>
                   <input
                     id="comp-model-id"
@@ -905,13 +1043,13 @@ export const CatalogAdminPanel: React.FC = () => {
                     value={modelId}
                     onChange={(e) => setModelId(e.target.value)}
                     style={{ padding: '8px 12px', borderRadius: '6px' }}
-                    placeholder="Ej. v-stack_630"
+                    placeholder={t('admin.ph_model_id', 'Ej. v-stack_630')}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: 'span 2' }}>
                   <label htmlFor="comp-model-path" style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--text-muted))' }}>
-                    Ruta del Archivo 3D (.glb)
+                    {t('admin.field_model_path', 'Ruta del Archivo 3D (.glb)')}
                   </label>
                   <input
                     id="comp-model-path"
@@ -920,7 +1058,7 @@ export const CatalogAdminPanel: React.FC = () => {
                     value={modelPath}
                     onChange={(e) => setModelPath(e.target.value)}
                     style={{ padding: '8px 12px', borderRadius: '6px' }}
-                    placeholder="Ej. /3d/Palletizer/v-stack_630.glb"
+                    placeholder={t('admin.ph_model_path', 'Ej. /3d/Palletizer/v-stack_630.glb')}
                   />
                 </div>
               </div>
@@ -937,25 +1075,25 @@ export const CatalogAdminPanel: React.FC = () => {
                     style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                   />
                   <label htmlFor="comp-available" style={{ fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                    Componente Disponible (Soft-delete / Toggle Activo)
+                    {t('admin.available_toggle', 'Componente Disponible (Soft-delete / Toggle Activo)')}
                   </label>
                 </div>
 
                 {/* Transport Types Supported */}
                 <div>
                   <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'hsl(var(--text-muted))', marginBottom: '8px' }}>
-                    Tipos de Transporte Soportados
+                    {t('admin.transport_types', 'Tipos de Transporte Soportados')}
                   </h4>
                   <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    {transportTypes.map((t) => (
-                      <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    {transportTypes.map((tp) => (
+                      <label key={tp.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
-                          checked={checkedTransportTypes.includes(t.id)}
-                          onChange={() => handleTransportCheckbox(t.id)}
+                          checked={checkedTransportTypes.includes(tp.id)}
+                          onChange={() => handleTransportCheckbox(tp.id)}
                           style={{ width: '14px', height: '14px' }}
                         />
-                        {t.name}
+                        {tp.name}
                       </label>
                     ))}
                   </div>
@@ -964,7 +1102,7 @@ export const CatalogAdminPanel: React.FC = () => {
                 {/* Product Types Supported */}
                 <div>
                   <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'hsl(var(--text-muted))', marginBottom: '8px' }}>
-                    Formatos de Producto Soportados
+                    {t('admin.product_types', 'Formatos de Producto Soportados')}
                   </h4>
                   <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                     {productTypes.map((p) => (
@@ -985,21 +1123,21 @@ export const CatalogAdminPanel: React.FC = () => {
               {/* Specifications Sub-Form (Dynamic) */}
               <div>
                 <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--brand-secondary))', marginBottom: '12px', borderBottom: '1px solid hsl(var(--border-color) / 0.4)', paddingBottom: '6px' }}>
-                  Especificaciones Técnicas (Dinámicas)
+                  {t('admin.specs_title', 'Especificaciones Técnicas (Dinámicas)')}
                 </h3>
 
                 {loadingSpecs ? (
                   <div style={{ color: 'hsl(var(--text-muted))', fontSize: '13px' }}>
-                    Cargando especificaciones desde la base de datos...
+                    {t('admin.loading_specs', 'Cargando especificaciones desde la base de datos...')}
                   </div>
                 ) : (() => {
-                  const typeObj = componentTypes.find((t) => t.id === parseInt(componentTypeId, 10));
+                  const typeObj = componentTypes.find((tp) => tp.id === parseInt(componentTypeId, 10));
                   const typeName = typeObj?.name || '';
 
                   if (typeName === 'infeed') {
                     return (
                       <p style={{ fontSize: '13px', color: 'hsl(var(--text-muted))', fontStyle: 'italic' }}>
-                        Este tipo de componente ("infeed") no requiere especificaciones técnicas adicionales en el modelo de base de datos.
+                        {t('admin.infeed_no_specs', 'Este tipo de componente ("infeed") no requiere especificaciones técnicas adicionales en el modelo de base de datos.')}
                       </p>
                     );
                   }
@@ -1008,7 +1146,7 @@ export const CatalogAdminPanel: React.FC = () => {
                   if (specFields.length === 0) {
                     return (
                       <p style={{ fontSize: '13px', color: 'hsl(var(--text-muted))', fontStyle: 'italic' }}>
-                        Selecciona un tipo de componente válido para definir sus especificaciones.
+                        {t('admin.select_valid_type', 'Selecciona un tipo de componente válido para definir sus especificaciones.')}
                       </p>
                     );
                   }
@@ -1032,7 +1170,7 @@ export const CatalogAdminPanel: React.FC = () => {
                                 onChange={(e) => handleSpecInputChange(f.field, e.target.value)}
                                 style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
                               >
-                                <option value="">Seleccionar...</option>
+                                <option value="">{t('admin.select_placeholder', 'Seleccionar...')}</option>
                                 {f.options.map((opt) => (
                                   <option key={opt} value={opt}>
                                     {opt}
@@ -1056,7 +1194,7 @@ export const CatalogAdminPanel: React.FC = () => {
                                 onChange={(e) => handleSpecInputChange(f.field, e.target.value)}
                                 style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
                               >
-                                <option value="">Seleccionar orientación...</option>
+                                <option value="">{t('admin.select_orientation_placeholder', 'Seleccionar orientación...')}</option>
                                 {orientations.map((o) => (
                                   <option key={o.id} value={String(o.id)}>
                                     {o.name}
@@ -1096,21 +1234,22 @@ export const CatalogAdminPanel: React.FC = () => {
                   className="btn-primary"
                   style={{ flex: 1, padding: '12px', borderRadius: '6px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
                 >
-                  {saving ? 'Guardando...' : 'Guardar Componente'}
+                  {saving ? t('admin.saving', 'Guardando...') : t('admin.save_component', 'Guardar Componente')}
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={() => {
+                    // Invalida cualquier carga de specs en vuelo al cancelar la edición.
+                    specRequestRef.current++;
                     setSelectedComponent(null);
                     setIsCreatingNew(false);
                     setErrorMsg(null);
-                    setSuccessMsg(null);
                   }}
                   className="btn-secondary"
                   style={{ padding: '12px 24px', borderRadius: '6px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
                 >
-                  Cancelar
+                  {t('modal.cancel', 'Cancelar')}
                 </button>
               </div>
             </form>

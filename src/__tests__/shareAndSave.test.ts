@@ -4,7 +4,12 @@ import { useConfiguratorStore, type ConfiguratorState } from '../store/useConfig
 import { mockDb, resetMockDb, supabase } from '../lib/__mocks__/supabaseClient';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
+
+// TopBar usa useNavigate(): en tests se renderiza dentro de un MemoryRouter.
+const renderTopBar = () =>
+  renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(TopBar)));
 
 // Spy on the useConfiguratorStore hook to return the current state dynamically during rendering
 const originalUseConfiguratorStore = storeModule.useConfiguratorStore;
@@ -154,21 +159,25 @@ describe('Milestone 5: Save & Upsert and Public Read-Only Sharing Tests', () => 
     expect(injectedHeader).toBeUndefined();
   });
 
-  test('auth state changes reset isReadOnly, shareToken and delete REST header', async () => {
+  test('INITIAL_SESSION does not clear share token state', async () => {
     ((supabase as unknown) as SupabaseClientWithRest).rest.headers.set('x-share-token', 'auth-changed-token');
-    
-    // Trigger initAuthListener (registers auth listener)
+
+    // Trigger initAuthListener (registers auth listener). The mock emits a
+    // synchronous INITIAL_SESSION event, which must NOT clear the share header:
+    // only real transitions (SIGNED_IN / SIGNED_OUT) clear the share state.
     const unsubscribe = getStore().initAuthListener();
 
-    // Call onAuthStateChange callback directly or via auth helper
-    // In our mock, auth changes can be simulated or we can manually inspect header clearing when initAuthListener is invoked and trigger callbacks
-    expect(getStore().isReadOnly).toBe(false);
-    expect(getStore().shareToken).toBeNull();
-
     const injectedHeader = ((supabase as unknown) as SupabaseClientWithRest).rest.headers.get('x-share-token');
-    expect(injectedHeader).toBeUndefined();
+    expect(injectedHeader).toBe('auth-changed-token');
 
     unsubscribe();
+
+    // A real logout does clear the header and the share state.
+    await getStore().logout();
+    expect(getStore().isReadOnly).toBe(false);
+    expect(getStore().shareToken).toBeNull();
+    const headerAfterLogout = ((supabase as unknown) as SupabaseClientWithRest).rest.headers.get('x-share-token');
+    expect(headerAfterLogout).toBeUndefined();
   });
 
   test('handleExportPDF dynamically imports jspdf', async () => {
@@ -230,18 +239,18 @@ describe('Milestone 5: Save & Upsert and Public Read-Only Sharing Tests', () => 
   test('TopBar does not render Parámetros button when isReadOnly is true', () => {
     // 1. Set isReadOnly to true via store setter
     useConfiguratorStore.setState({ isReadOnly: true });
-    
+
     // Render and assert
-    const html = renderToStaticMarkup(React.createElement(TopBar));
+    const html = renderTopBar();
     expect(html).not.toContain('Parámetros');
   });
 
   test('TopBar renders Parámetros button when isReadOnly is false', () => {
     // 1. Set isReadOnly to false via store setter
     useConfiguratorStore.setState({ isReadOnly: false });
-    
+
     // Render and assert
-    const html = renderToStaticMarkup(React.createElement(TopBar));
+    const html = renderTopBar();
     expect(html).toContain('Parámetros');
   });
 });

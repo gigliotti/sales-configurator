@@ -1,0 +1,10 @@
+node_modules
+dist
+.vercel
+.git
+.env
+supabase
+database
+*.log
+public/3d/Palletizer/v-stack_745.glb
+

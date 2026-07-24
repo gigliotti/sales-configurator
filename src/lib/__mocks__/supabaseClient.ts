@@ -444,6 +444,18 @@ export function setMockCurrentUser(user: any) {
 
 const headers = new Map<string, string>();
 
+// Réplicas de los helpers del cliente real (fetch wrapper): el store los usa
+// para inyectar cabeceras dinámicas como x-share-token.
+export function setRequestHeader(key: string, value: string) {
+  headers.set(key.toLowerCase(), value);
+}
+export function deleteRequestHeader(key: string) {
+  headers.delete(key.toLowerCase());
+}
+export function getRequestHeader(key: string): string | undefined {
+  return headers.get(key.toLowerCase());
+}
+
 class MockQueryBuilder {
   private tableName: string;
   private filters: Array<(item: any) => boolean> = [];
