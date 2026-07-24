@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
 import { useShallow } from 'zustand/shallow';
+import { formatEUR } from '../lib/format';
 
 export const ComponentSidebar: React.FC = () => {
   const {
@@ -16,6 +17,8 @@ export const ComponentSidebar: React.FC = () => {
     isReadOnly,
     replacingComponentUuid,
     replaceComponent,
+    setReplacingComponentUuid,
+    language,
   } = useConfiguratorStore(
     useShallow((state) => ({
       catalog: state.catalog,
@@ -30,6 +33,8 @@ export const ComponentSidebar: React.FC = () => {
       isReadOnly: state.isReadOnly,
       replacingComponentUuid: state.replacingComponentUuid,
       replaceComponent: state.replaceComponent,
+      setReplacingComponentUuid: state.setReplacingComponentUuid,
+      language: state.language,
     }))
   );
 
@@ -37,20 +42,29 @@ export const ComponentSidebar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [prevReplacingUuid, setPrevReplacingUuid] = useState<string | null>(null);
 
+  // Al entrar en modo reemplazo, salta a la pestaña de ubicación del componente a
+  // reemplazar (ajuste de estado durante el render comparando con el valor previo).
   if (replacingComponentUuid !== prevReplacingUuid) {
     setPrevReplacingUuid(replacingComponentUuid);
     if (replacingComponentUuid) {
       const compToReplace = placedComponents.find((c) => c.uuid === replacingComponentUuid);
       if (compToReplace) {
         const targetTab = (compToReplace.locationId === null || compToReplace.locationId > 2 || compToReplace.locationId < 0) ? 3 : compToReplace.locationId;
-        if (targetTab !== activeLocationTab) {
-          setActiveLocationTab(targetTab);
-        }
+        setActiveLocationTab(targetTab);
       }
     }
   }
 
   if (isReadOnly) return null;
+
+  const replacingComponent = replacingComponentUuid
+    ? placedComponents.find((c) => c.uuid === replacingComponentUuid) ?? null
+    : null;
+  const replacingComponentName = replacingComponent
+    ? (replacingComponent.componentType
+        ? t(`component.${replacingComponent.componentType}`, replacingComponent.name)
+        : replacingComponent.name)
+    : '';
 
   // Find the selected Palletizer ID in the active line
   const currentLineComponents = placedComponents.filter((c) => c.lineId === activeLineId);
@@ -157,6 +171,8 @@ export const ComponentSidebar: React.FC = () => {
 
       {/* Location Tabs */}
       <div
+        role="tablist"
+        aria-label={t('config.location_3d', 'Ubicación en escena 3D')}
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
@@ -169,6 +185,9 @@ export const ComponentSidebar: React.FC = () => {
           return (
             <button
               key={id}
+              role="tab"
+              aria-selected={isActive}
+              aria-label={getLocationName(id)}
               onClick={() => setActiveLocationTab(id)}
               style={{
                 padding: '12px 2px',
@@ -204,6 +223,7 @@ export const ComponentSidebar: React.FC = () => {
           type="text"
           className="form-input"
           placeholder={t('sidebar.search_placeholder', 'Buscar módulo...')}
+          aria-label={t('sidebar.search_placeholder', 'Buscar módulo...')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
@@ -212,6 +232,46 @@ export const ComponentSidebar: React.FC = () => {
           }}
         />
       </div>
+
+      {/* Replacement mode banner */}
+      {replacingComponentUuid && (
+        <div
+          style={{
+            margin: '12px 20px 0',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            border: '1px dashed hsl(var(--brand-primary))',
+            backgroundColor: 'rgba(242, 139, 5, 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            fontSize: '12px',
+            color: 'hsl(var(--brand-primary))',
+          }}
+        >
+          <span style={{ fontWeight: 500 }}>
+            🔄 {t('sidebar.replacing_hint', 'Reemplazando: {{name}}', { name: replacingComponentName })}
+          </span>
+          <button
+            onClick={() => setReplacingComponentUuid(null)}
+            aria-label={t('modal.cancel', 'Cancelar')}
+            title={t('modal.cancel', 'Cancelar')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'hsl(var(--text-muted))',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 600,
+              lineHeight: 1,
+              padding: '2px 4px',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Component Catalog List */}
       <div
@@ -299,7 +359,7 @@ export const ComponentSidebar: React.FC = () => {
                 }}
               >
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--brand-primary))' }}>
-                  {comp.price_eur ? `€${comp.price_eur.toLocaleString()}` : '€0.00'}
+                  {formatEUR(comp.price_eur, language)}
                 </div>
                 {replacingComponentUuid ? (
                   <button

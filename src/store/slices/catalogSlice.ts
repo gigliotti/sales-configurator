@@ -37,15 +37,27 @@ const SPEC_TABLES = [
   'main_frame_specs',
 ];
 
+/** Forma exacta que devuelve la RPC get_catalog_full() (ver migración 20260724100200). */
 interface CatalogRpcPayload {
-  components?: (DBComponent & {
-    component_type_name?: string;
-    transport_types?: string[];
-    product_types?: string[];
-    specs?: Record<string, unknown>;
-  })[];
-  infeed_compatibilities?: { infeed_id: number; palletizer_id: number }[];
-  main_frame_compatibilities?: { main_frame_id: number; palletizer_id: number }[];
+  components?: {
+    id: number;
+    code: string;
+    name: string;
+    component_type_id: number;
+    component_type: string;
+    available: boolean;
+    location_id: number;
+    price_eur: string | number | null;
+    model_id: string;
+    model_path: string;
+    transport_type_ids?: number[];
+    product_type_ids?: number[];
+    specs?: Record<string, unknown> | null;
+  }[];
+  transport_types?: { id: number; name: string }[];
+  product_types?: { id: number; name: string }[];
+  infeed_palletizer_compatibility?: { infeed_id: number; palletizer_id: number }[];
+  main_frame_palletizer_compatibility?: { main_frame_id: number; palletizer_id: number }[];
 }
 
 /** Intenta cargar el catálogo con la RPC agregada; null si la función no existe aún. */
@@ -77,10 +89,16 @@ export const createCatalogSlice: StateCreator<ConfiguratorState, [], [], Catalog
       // Camino rápido: una sola llamada RPC con el catálogo ya ensamblado.
       const rpcData = await tryLoadCatalogViaRpc();
       if (rpcData && Array.isArray(rpcData.components)) {
+        const transportNameById = new Map(
+          (rpcData.transport_types || []).map((t) => [t.id, t.name])
+        );
+        const productNameById = new Map(
+          (rpcData.product_types || []).map((p) => [p.id, p.name])
+        );
         const formatted: CatalogComponent[] = rpcData.components.map((comp) => ({
           id: comp.id,
           component_type_id: comp.component_type_id,
-          component_type_name: comp.component_type_name || comp.component_types?.name || '',
+          component_type_name: comp.component_type || '',
           code: comp.code,
           name: comp.name,
           price_eur: toNumber(comp.price_eur),
@@ -88,14 +106,18 @@ export const createCatalogSlice: StateCreator<ConfiguratorState, [], [], Catalog
           model_id: comp.model_id,
           model_path: comp.model_path,
           available: comp.available,
-          transport_types: comp.transport_types || [],
-          product_types: comp.product_types || [],
+          transport_types: (comp.transport_type_ids || [])
+            .map((id) => transportNameById.get(id))
+            .filter((n): n is string => typeof n === 'string'),
+          product_types: (comp.product_type_ids || [])
+            .map((id) => productNameById.get(id))
+            .filter((n): n is string => typeof n === 'string'),
           specs: (comp.specs as CatalogComponent['specs']) || {},
         }));
         set({
           catalog: formatted,
-          infeedCompatibilities: rpcData.infeed_compatibilities || [],
-          mainFrameCompatibilities: rpcData.main_frame_compatibilities || [],
+          infeedCompatibilities: rpcData.infeed_palletizer_compatibility || [],
+          mainFrameCompatibilities: rpcData.main_frame_palletizer_compatibility || [],
         });
         return;
       }

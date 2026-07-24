@@ -1,22 +1,38 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import type { ProjectStatus } from '../store/useConfiguratorStore';
 import { useShallow } from 'zustand/shallow';
+import { ConfirmDialog } from './ui/Modal';
+import { formatEUR, toNumber } from '../lib/format';
+import { clearDraft, readDraft } from '../hooks/useAutosaveDraft';
+import type { DraftPayload } from '../hooks/useAutosaveDraft';
+
+const PAGE_SIZE = 12;
+
+const STATUS_COLORS: Record<ProjectStatus, { bg: string; fg: string; border: string }> = {
+  draft: { bg: 'rgba(148, 163, 184, 0.12)', fg: '#94a3b8', border: 'rgba(148, 163, 184, 0.4)' },
+  sent: { bg: 'rgba(59, 130, 246, 0.12)', fg: '#60a5fa', border: 'rgba(59, 130, 246, 0.45)' },
+  approved: { bg: 'rgba(34, 197, 94, 0.12)', fg: '#4ade80', border: 'rgba(34, 197, 94, 0.45)' },
+  rejected: { bg: 'rgba(239, 68, 68, 0.12)', fg: '#f87171', border: 'rgba(239, 68, 68, 0.45)' },
+};
+
+function normalizeStatus(status?: string): ProjectStatus {
+  return (['draft', 'sent', 'approved', 'rejected'].includes(status || '') ? status : 'draft') as ProjectStatus;
+}
 
 export const Lobby: React.FC = () => {
   const {
-    setStep,
     loading,
     projectsList,
     favoriteProjectIds,
     activeProfile,
-    profiles,
-    setActiveProfile,
-    loadProfiles,
     loadProjectsList,
     toggleFavoriteProject,
     loadProject,
     deleteProject,
     resetConfiguratorState,
+    restoreSnapshot,
     language,
     setLanguage,
     t,
@@ -24,19 +40,16 @@ export const Lobby: React.FC = () => {
     logout,
   } = useConfiguratorStore(
     useShallow((state) => ({
-      setStep: state.setStep,
       loading: state.loading,
       projectsList: state.projectsList,
       favoriteProjectIds: state.favoriteProjectIds,
       activeProfile: state.activeProfile,
-      profiles: state.profiles,
-      setActiveProfile: state.setActiveProfile,
-      loadProfiles: state.loadProfiles,
       loadProjectsList: state.loadProjectsList,
       toggleFavoriteProject: state.toggleFavoriteProject,
       loadProject: state.loadProject,
       deleteProject: state.deleteProject,
       resetConfiguratorState: state.resetConfiguratorState,
+      restoreSnapshot: state.restoreSnapshot,
       language: state.language,
       setLanguage: state.setLanguage,
       t: state.t,
@@ -45,11 +58,17 @@ export const Lobby: React.FC = () => {
     }))
   );
 
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState<'mine' | 'others' | 'favorites'>('mine');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'all' | ProjectStatus>('all');
+  const [page, setPage] = useState<number>(1);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<DraftPayload | null>(() => readDraft());
 
   const resolvedTab = !activeProfile
     ? 'others'
@@ -59,9 +78,21 @@ export const Lobby: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    loadProfiles();
     loadProjectsList();
-  }, [loadProfiles, loadProjectsList]);
+  }, [loadProjectsList]);
+
+  // Reset pagination when any filter changes (state adjustment during render,
+  // comparing against the previously rendered values).
+  const [prevFilters, setPrevFilters] = useState({ searchQuery, statusFilter, resolvedTab, projectsList });
+  if (
+    searchQuery !== prevFilters.searchQuery ||
+    statusFilter !== prevFilters.statusFilter ||
+    resolvedTab !== prevFilters.resolvedTab ||
+    projectsList !== prevFilters.projectsList
+  ) {
+    setPrevFilters({ searchQuery, statusFilter, resolvedTab, projectsList });
+    setPage(1);
+  }
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,20 +103,31 @@ export const Lobby: React.FC = () => {
     }
   };
 
+  const handleGuestExplore = () => {
+    resetConfiguratorState();
+    navigate('/wizard');
+  };
+
   const handleCreateNew = () => {
     resetConfiguratorState();
-    setStep('WIZARD');
+    navigate('/wizard');
   };
 
   const handleSelectProject = async (projectId: string) => {
     await loadProject(projectId);
+    navigate(`/editor/${projectId}`);
   };
 
-  const handleDelete = async (e: React.MouseEvent, projectId: string) => {
+  const handleDelete = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
-    if (window.confirm('¿Estás seguro de que deseas eliminar este proyecto de manera permanente?')) {
-      await deleteProject(projectId);
+    setDeleteTargetId(projectId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteTargetId) {
+      await deleteProject(deleteTargetId);
     }
+    setDeleteTargetId(null);
   };
 
   const handleFavoriteToggle = async (e: React.MouseEvent, projectId: string) => {
@@ -93,14 +135,31 @@ export const Lobby: React.FC = () => {
     await toggleFavoriteProject(projectId);
   };
 
+  const handleDraftContinue = async () => {
+    if (!draft) return;
+    if (draft.currentProjectId) {
+      await loadProject(draft.currentProjectId);
+    }
+    restoreSnapshot(draft.snapshot);
+    navigate('/editor');
+  };
+
+  const handleDraftDiscard = () => {
+    clearDraft();
+    setDraft(null);
+  };
+
   // Filter projects
   const filteredProjects = projectsList.filter((p) => {
-    const matchesSearch = 
+    const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.client_name && p.client_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (p.client_email && p.client_email.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
     if (!matchesSearch) return false;
+
+    // Filter by status
+    if (statusFilter !== 'all' && normalizeStatus(p.status) !== statusFilter) return false;
 
     // Filter by tab ownership
     if (resolvedTab === 'mine') {
@@ -119,6 +178,18 @@ export const Lobby: React.FC = () => {
 
     return true;
   });
+
+  // Client-side pagination
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageProjects = filteredProjects.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const draftDate = draft
+    ? new Date(draft.savedAt).toLocaleString(language === 'es' ? 'es-ES' : 'en-GB', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      })
+    : '';
 
   return (
     <div
@@ -146,6 +217,42 @@ export const Lobby: React.FC = () => {
           boxShadow: '0 24px 60px rgba(0, 0, 0, 0.4)',
         }}
       >
+        {/* Unsaved Draft Banner */}
+        {draft && (
+          <div
+            style={{
+              padding: '12px 32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              flexWrap: 'wrap',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              borderBottom: '1px solid rgba(245, 158, 11, 0.35)',
+            }}
+          >
+            <span style={{ fontSize: '13px', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              📝 {t('autosave.banner', 'Tienes un borrador sin guardar del {{date}}', { date: draftDate })}
+            </span>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn-primary"
+                onClick={handleDraftContinue}
+                style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}
+              >
+                {t('autosave.continue', 'Continuar')}
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={handleDraftDiscard}
+                style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}
+              >
+                {t('autosave.discard', 'Descartar borrador')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Lobby Header */}
         <div
           style={{
@@ -174,57 +281,26 @@ export const Lobby: React.FC = () => {
             </h1>
           </div>
 
-          {/* Profile and Language Switchers */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* Language Switcher */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
-                {language === 'es' ? 'Idioma:' : 'Language:'}
-              </span>
-              <select
-                className="form-input"
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '13px',
-                  borderRadius: '6px',
-                  backgroundColor: 'rgba(20,25,40,0.8)',
-                  cursor: 'pointer',
-                }}
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as 'es' | 'en')}
-              >
-                <option value="es">Español</option>
-                <option value="en">English</option>
-              </select>
-            </div>
-
-            {/* Profile Switcher Dropdown */}
-            {(!activeProfile || activeProfile.role === 'admin') && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
-                  {t('lobby.active_user', 'Usuario Activo:')}
-                </span>
-                <select
-                  className="form-input"
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '13px',
-                    minWidth: '180px',
-                    borderRadius: '6px',
-                    backgroundColor: 'rgba(20,25,40,0.8)',
-                  }}
-                  value={activeProfile?.id || ''}
-                  onChange={(e) => setActiveProfile(e.target.value || null)}
-                >
-                  <option value="">{t('lobby.anonymous', 'Anónimo / Vista Pública')}</option>
-                  {profiles.map((prof) => (
-                    <option key={prof.id} value={prof.id}>
-                      {prof.name} ({prof.role === 'admin' ? t('role.admin', 'Admin') : t('role.seller', 'Vendedor')})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+          {/* Language Switcher */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
+              {language === 'es' ? 'Idioma:' : 'Language:'}
+            </span>
+            <select
+              className="form-input"
+              style={{
+                padding: '6px 12px',
+                fontSize: '13px',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(20,25,40,0.8)',
+                cursor: 'pointer',
+              }}
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as 'es' | 'en')}
+            >
+              <option value="es">Español</option>
+              <option value="en">English</option>
+            </select>
           </div>
         </div>
 
@@ -271,8 +347,8 @@ export const Lobby: React.FC = () => {
               )}
             </div>
 
-            {/* Search Input, New Button & Sign Out Button */}
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1, justifyContent: 'flex-end', maxWidth: '700px' }}>
+            {/* Search Input, Status Filter, New Button & Sign Out Button */}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1, justifyContent: 'flex-end', maxWidth: '760px', flexWrap: 'wrap' }}>
               <input
                 type="text"
                 placeholder={t('lobby.search_placeholder', 'Buscar por proyecto, cliente o correo...')}
@@ -286,6 +362,24 @@ export const Lobby: React.FC = () => {
                   borderRadius: '6px',
                 }}
               />
+              <select
+                className="form-input"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectStatus)}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(20,25,40,0.8)',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="all">{t('lobby.filter_status_all', 'Todos los estados')}</option>
+                <option value="draft">{t('lobby.status_draft', 'Borrador')}</option>
+                <option value="sent">{t('lobby.status_sent', 'Enviada')}</option>
+                <option value="approved">{t('lobby.status_approved', 'Aprobada')}</option>
+                <option value="rejected">{t('lobby.status_rejected', 'Rechazada')}</option>
+              </select>
               <button
                 className="btn-primary"
                 onClick={handleCreateNew}
@@ -304,7 +398,7 @@ export const Lobby: React.FC = () => {
               {activeProfile?.role === 'admin' && (
                 <button
                   className="btn-secondary"
-                  onClick={() => setStep('CATALOG_ADMIN')}
+                  onClick={() => navigate('/admin')}
                   style={{
                     padding: '9px 18px',
                     borderRadius: '6px',
@@ -388,6 +482,14 @@ export const Lobby: React.FC = () => {
                   {t('login.submit_btn', 'Ingresar')}
                 </button>
               </form>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleGuestExplore}
+                style={{ padding: '12px', borderRadius: '6px', fontSize: '14px', fontWeight: 600, marginTop: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}
+              >
+                🧪 {t('lobby.guest_btn', 'Explorar como invitado')}
+              </button>
             </div>
           ) : loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: 'hsl(var(--brand-primary))' }}>
@@ -408,160 +510,224 @@ export const Lobby: React.FC = () => {
             >
               <h3>{t('lobby.no_projects_found', 'No se encontraron proyectos')}</h3>
               <p style={{ fontSize: '14px', marginTop: '6px' }}>
-                {searchQuery 
-                  ? t('lobby.no_projects_search_desc', 'Prueba ajustando tu búsqueda.') 
+                {searchQuery
+                  ? t('lobby.no_projects_search_desc', 'Prueba ajustando tu búsqueda.')
                   : t('lobby.no_projects_create_desc', 'Crea una nueva cotización presionando el botón "Nueva Cotización".')}
               </p>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '20px',
-              }}
-            >
-              {filteredProjects.map((p) => {
-                const isFavorite = favoriteProjectIds.includes(p.id);
-                const isOwner = activeProfile && p.owner_id === activeProfile.id;
-                const isAdmin = activeProfile && activeProfile.role === 'admin';
-                const showDelete = isOwner || isAdmin;
-                const showFavorite = activeProfile && !isOwner; // Can favorite others' projects
+            <>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  gap: '20px',
+                }}
+              >
+                {pageProjects.map((p) => {
+                  const isFavorite = favoriteProjectIds.includes(p.id);
+                  const isOwner = activeProfile && p.owner_id === activeProfile.id;
+                  const isAdmin = activeProfile && activeProfile.role === 'admin';
+                  const showDelete = isOwner || isAdmin;
+                  const showFavorite = activeProfile && !isOwner; // Can favorite others' projects
+                  const status = normalizeStatus(p.status);
+                  const statusStyle = STATUS_COLORS[status];
 
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => handleSelectProject(p.id)}
-                    className="glass-panel"
-                    style={{
-                      padding: '20px',
-                      borderRadius: '10px',
-                      border: '1px solid hsl(var(--border-color))',
-                      backgroundColor: 'hsl(var(--bg-tertiary))',
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      minHeight: '180px',
-                      position: 'relative',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'hsl(var(--brand-primary) / 0.5)';
-                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'hsl(var(--border-color))';
-                      e.currentTarget.style.boxShadow = 'none';
-                      e.currentTarget.style.transform = 'none';
-                    }}
-                  >
-                    {/* Project Top Section */}
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                        <h3
-                          style={{
-                            fontSize: '17px',
-                            fontWeight: 600,
-                            lineHeight: 1.3,
-                            color: 'hsl(var(--text-primary))',
-                            maxWidth: '80%',
-                          }}
-                        >
-                          {p.name}
-                        </h3>
-                        
-                        {/* Favorites Star Indicator / Toggle */}
-                        {showFavorite && (
-                          <button
-                            onClick={(e) => handleFavoriteToggle(e, p.id)}
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleSelectProject(p.id)}
+                      className="glass-panel"
+                      style={{
+                        padding: '20px',
+                        borderRadius: '10px',
+                        border: '1px solid hsl(var(--border-color))',
+                        backgroundColor: 'hsl(var(--bg-tertiary))',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: '180px',
+                        position: 'relative',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'hsl(var(--brand-primary) / 0.5)';
+                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'hsl(var(--border-color))';
+                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      {/* Project Top Section */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                          <h3
                             style={{
-                              background: 'none',
-                              border: 'none',
-                              fontSize: '18px',
-                              cursor: 'pointer',
-                              padding: 0,
-                              color: isFavorite ? 'hsl(45, 100%, 50%)' : 'hsl(var(--text-muted))',
-                              transition: 'transform 0.1s',
+                              fontSize: '17px',
+                              fontWeight: 600,
+                              lineHeight: 1.3,
+                              color: 'hsl(var(--text-primary))',
+                              maxWidth: '80%',
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-                            onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
-                            title={isFavorite ? t('project.remove_favorite', 'Quitar de Favoritos') : t('project.add_favorite', 'Marcar como Favorito')}
                           >
-                            {isFavorite ? '★' : '☆'}
-                          </button>
-                        )}
-                      </div>
-                      
-                      {/* Client info */}
-                      <div style={{ fontSize: '13px', color: 'hsl(var(--text-muted))', marginTop: '8px' }}>
-                        <div>👤 {t('project.client', 'Cliente')}: {p.client_name || t('project.unspecified', 'Sin especificar')}</div>
-                        {p.client_email && <div style={{ fontSize: '12px' }}>✉️ {p.client_email}</div>}
-                      </div>
-                    </div>
+                            {p.name}
+                          </h3>
 
-                    {/* Project Bottom Section */}
-                    <div style={{ marginTop: '20px', borderTop: '1px solid hsl(var(--border-color))', paddingTop: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: '11px', color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>
-                            {t('project.estimated_price', 'Precio Estimado')}
-                          </div>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: 'hsl(var(--brand-secondary))', marginTop: '2px' }}>
-                            €{p.total_price_eur ? parseFloat(String(p.total_price_eur)).toLocaleString() : '0'}
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {showDelete && (
+                          {/* Favorites Star Indicator / Toggle */}
+                          {showFavorite && (
                             <button
-                              onClick={(e) => handleDelete(e, p.id)}
+                              onClick={(e) => handleFavoriteToggle(e, p.id)}
                               style={{
-                                background: 'rgba(231, 76, 60, 0.1)',
-                                border: '1px solid hsl(var(--state-error))',
-                                color: 'hsl(var(--state-error))',
-                                padding: '6px 10px',
-                                borderRadius: '4px',
-                                fontSize: '12px',
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '18px',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s',
+                                padding: 0,
+                                color: isFavorite ? 'hsl(45, 100%, 50%)' : 'hsl(var(--text-muted))',
+                                transition: 'transform 0.1s',
                               }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'hsl(var(--state-error))';
-                                e.currentTarget.style.color = '#fff';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(231, 76, 60, 0.1)';
-                                e.currentTarget.style.color = 'hsl(var(--state-error))';
-                              }}
-                              title={t('project.delete_title', 'Eliminar Proyecto')}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                              title={isFavorite ? t('project.remove_favorite', 'Quitar de Favoritos') : t('project.add_favorite', 'Marcar como Favorito')}
                             >
-                              🗑️
+                              {isFavorite ? '★' : '☆'}
                             </button>
                           )}
-                          <button
-                            className="btn-primary"
-                            style={{
-                              padding: '6px 12px',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {t('project.load_btn', 'Cargar')} ➡️
-                          </button>
+                        </div>
+
+                        {/* Status Badge */}
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            marginTop: '8px',
+                            padding: '3px 10px',
+                            borderRadius: '999px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            backgroundColor: statusStyle.bg,
+                            color: statusStyle.fg,
+                            border: `1px solid ${statusStyle.border}`,
+                          }}
+                        >
+                          {t(`lobby.status_${status}`, status)}
+                        </span>
+
+                        {/* Client info */}
+                        <div style={{ fontSize: '13px', color: 'hsl(var(--text-muted))', marginTop: '8px' }}>
+                          <div>👤 {t('project.client', 'Cliente')}: {p.client_name || t('project.unspecified', 'Sin especificar')}</div>
+                          {p.client_email && <div style={{ fontSize: '12px' }}>✉️ {p.client_email}</div>}
+                        </div>
+                      </div>
+
+                      {/* Project Bottom Section */}
+                      <div style={{ marginTop: '20px', borderTop: '1px solid hsl(var(--border-color))', paddingTop: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontSize: '11px', color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>
+                              {t('project.estimated_price', 'Precio Estimado')}
+                            </div>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: 'hsl(var(--brand-secondary))', marginTop: '2px' }}>
+                              {formatEUR(toNumber(p.total_price_eur), language)}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {showDelete && (
+                              <button
+                                onClick={(e) => handleDelete(e, p.id)}
+                                style={{
+                                  background: 'rgba(231, 76, 60, 0.1)',
+                                  border: '1px solid hsl(var(--state-error))',
+                                  color: 'hsl(var(--state-error))',
+                                  padding: '6px 10px',
+                                  borderRadius: '4px',
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'hsl(var(--state-error))';
+                                  e.currentTarget.style.color = '#fff';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(231, 76, 60, 0.1)';
+                                  e.currentTarget.style.color = 'hsl(var(--state-error))';
+                                }}
+                                title={t('project.delete_title', 'Eliminar Proyecto')}
+                              >
+                                🗑️
+                              </button>
+                            )}
+                            <button
+                              className="btn-primary"
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {t('project.load_btn', 'Cargar')} ➡️
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px', marginTop: '24px' }}>
+                  <button
+                    className="btn-secondary"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage(safePage - 1)}
+                    title={t('lobby.page_prev', 'Página anterior')}
+                    aria-label={t('lobby.page_prev', 'Página anterior')}
+                    style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, opacity: safePage <= 1 ? 0.4 : 1, cursor: safePage <= 1 ? 'default' : 'pointer' }}
+                  >
+                    ‹
+                  </button>
+                  <span style={{ fontSize: '13px', color: 'hsl(var(--text-muted))', fontWeight: 600 }}>
+                    {safePage}/{totalPages}
+                  </span>
+                  <button
+                    className="btn-secondary"
+                    disabled={safePage >= totalPages}
+                    onClick={() => setPage(safePage + 1)}
+                    title={t('lobby.page_next', 'Página siguiente')}
+                    aria-label={t('lobby.page_next', 'Página siguiente')}
+                    style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '14px', fontWeight: 700, opacity: safePage >= totalPages ? 0.4 : 1, cursor: safePage >= totalPages ? 'default' : 'pointer' }}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {/* Delete Project Confirmation */}
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title={t('project.delete_title', 'Eliminar Proyecto')}
+        message={t('modal.confirm_delete_project', '¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.')}
+        confirmLabel={t('modal.delete', 'Eliminar')}
+        cancelLabel={t('modal.cancel', 'Cancelar')}
+        danger
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTargetId(null)}
+      />
     </div>
   );
 };

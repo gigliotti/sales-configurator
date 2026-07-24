@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
-import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/shallow';
+import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import type { ProjectStatus } from '../store/useConfiguratorStore';
+import { captureScene } from '../lib/sceneCapture';
+import { generateQuotePdf } from '../lib/pdfExport';
+import { exportBomCsv } from '../lib/csvExport';
+import { Modal, ConfirmDialog, PromptDialog } from './ui/Modal';
+import { VersionHistoryModal } from './VersionHistoryModal';
+
+const PROJECT_STATUSES: ProjectStatus[] = ['draft', 'sent', 'approved', 'rejected'];
 
 export const TopBar: React.FC = () => {
   const {
@@ -25,6 +34,11 @@ export const TopBar: React.FC = () => {
     isReadOnly,
     shareToken,
     currentProjectId,
+    projectsList,
+    updateProjectStatus,
+    duplicateProjectAsNew,
+    regenerateShareToken,
+    revokeShareToken,
   } = useConfiguratorStore(
     useShallow((state) => ({
       setStep: state.setStep,
@@ -48,27 +62,61 @@ export const TopBar: React.FC = () => {
       isReadOnly: state.isReadOnly,
       shareToken: state.shareToken,
       currentProjectId: state.currentProjectId,
+      projectsList: state.projectsList,
+      updateProjectStatus: state.updateProjectStatus,
+      duplicateProjectAsNew: state.duplicateProjectAsNew,
+      regenerateShareToken: state.regenerateShareToken,
+      revokeShareToken: state.revokeShareToken,
     }))
   );
+
+  const navigate = useNavigate();
 
   const [saving, setSaving] = useState<boolean>(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
+  // Diálogos y modales
+  const [addLineOpen, setAddLineOpen] = useState(false);
+  const [addLineFormat, setAddLineFormat] = useState<'CAJA' | 'BOLSA'>('CAJA');
+  const [deleteLineOpen, setDeleteLineOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [revokeOpen, setRevokeOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+
+  // Estado del proyecto (optimista, por si el proyecto no está en projectsList).
+  // Se descarta al cambiar de proyecto: ajuste de estado durante el render
+  // comparando con el proyecto previamente renderizado.
+  const [localStatus, setLocalStatus] = useState<ProjectStatus | null>(null);
+  const [prevProjectId, setPrevProjectId] = useState(currentProjectId);
+  if (currentProjectId !== prevProjectId) {
+    setPrevProjectId(currentProjectId);
+    setLocalStatus(null);
+  }
+
+  const remoteStatus = projectsList.find((p) => p.id === currentProjectId)?.status;
+  const projectStatus: ProjectStatus =
+    localStatus ??
+    (PROJECT_STATUSES.includes(remoteStatus as ProjectStatus) ? (remoteStatus as ProjectStatus) : 'draft');
+
+  const showToast = (type: 'success' | 'error', msg: string, ms = 4000) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), ms);
+  };
+
   const handleBackToWizard = () => {
     setStep('WIZARD');
+    navigate('/wizard');
   };
 
   const handleBackToLobby = () => {
     setStep('LOBBY');
+    navigate('/projects');
   };
 
   const handleSave = async () => {
     if (!activeProfile || activeProfile.role === 'client') {
-      setToast({
-        type: 'error',
-        msg: 'No tienes permisos para guardar. Selecciona un perfil de Vendedor o Admin en el Lobby para poder guardar cotizaciones.',
-      });
-      setTimeout(() => setToast(null), 5000);
+      showToast('error', t('toast.no_permission_save', 'No tienes permisos para guardar este proyecto.'), 5000);
       return;
     }
     setSaving(true);
@@ -76,182 +124,82 @@ export const TopBar: React.FC = () => {
     const res = await saveProject();
     setSaving(false);
     if (res.success) {
-      setToast({ type: 'success', msg: '¡Cotización guardada exitosamente en Supabase!' });
+      showToast('success', t('toast.save_success', 'Cotización guardada correctamente.'));
     } else {
-      setToast({ type: 'error', msg: `Error al guardar: ${res.error}` });
+      showToast('error', `${t('toast.save_error', 'Error al guardar la cotización. Inténtalo de nuevo.')} (${res.error})`);
     }
-    setTimeout(() => setToast(null), 4000);
   };
 
   const handleExportPDF = async () => {
     try {
-      // 1. Get 3D Canvas screenshot
-      const canvas = document.querySelector('canvas');
-      let imgData = '';
-      if (canvas) {
-        imgData = canvas.toDataURL('image/png');
-      }
-
-      // 2. Initialize PDF (A4 Page, Portrait)
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
+      const img =
+        captureScene({ width: 1600 }) ??
+        (document.querySelector('canvas')?.toDataURL('image/png') || '');
+      await generateQuotePdf({
+        projectName,
+        clientName,
+        clientEmail,
+        params,
+        lines,
+        placedComponents,
+        totalPrice,
+        language,
+        t,
+        image: img || null,
+        projectId: currentProjectId,
       });
-
-      // Colors
-      const primaryColor = [242, 139, 5]; // Orange HSL(24, 95%, 52%)
-      const darkColor = [11, 15, 25];
-
-      // Header Bar
-      doc.setFillColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.rect(0, 0, 210, 25, 'F');
-
-      // Header Brand text
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(16);
-      doc.text('VERBRUGGEN PALLETIZING', 15, 16);
-
-      doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text('CONFIGURADOR DE VENTAS 3D', 145, 16);
-
-      // Quote Title & Metadata
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('COTIZACIÓN DE LÍNEA DE PALETIZADO', 15, 40);
-
-      doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Proyecto: ${projectName}`, 15, 48);
-      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 15, 53);
-      
-      // Client Details block
-      doc.setFillColor(245, 247, 250);
-      doc.rect(120, 35, 75, 22, 'F');
-      doc.setTextColor(50, 50, 50);
-      doc.setFont('Helvetica', 'bold');
-      doc.text('Detalles del Cliente:', 125, 41);
-      doc.setFont('Helvetica', 'normal');
-      doc.text(`Nombre: ${clientName || 'N/A'}`, 125, 46);
-      doc.text(`Email: ${clientEmail || 'N/A'}`, 125, 51);
-
-      // Render 3D Viewport screenshot (placed in the middle of page)
-      if (imgData) {
-        doc.setFillColor(235, 240, 245);
-        doc.rect(15, 60, 180, 80, 'F'); // Background container box for image
-        doc.addImage(imgData, 'PNG', 15, 60, 180, 80);
-      }
-
-      // Parameters list
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.text('Parámetros de Entrada del Cliente:', 15, 148);
-
-      doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(70, 70, 70);
-      doc.text(`• Formato Producto: ${params.productType}`, 15, 154);
-      doc.text(`• Medidas Producto: ${params.productLength}x${params.productWidth}x${params.productHeight} mm`, 15, 159);
-      doc.text(`• Peso Producto: ${params.productWeight} kg`, 15, 164);
-      doc.text(`• Velocidad Requerida: ${params.desiredSpeed} u/min`, 15, 169);
-      doc.text(`• Dimensiones Pallet: ${params.palletLength}x${params.palletWidth} mm`, 110, 154);
-      doc.text(`• Unidades / Capa: ${params.unitsPerLayer}`, 110, 159);
-      doc.text(`• Altura Carga: ${params.totalPalletHeight} mm`, 110, 164);
-      doc.text(`• Envoltura: ${params.preferredWrapType}`, 110, 169);
-
-      // Components table
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.text('Desglose de Módulos Seleccionados:', 15, 180);
-
-      // Table headers
-      doc.setFillColor(240, 240, 240);
-      doc.rect(15, 184, 180, 6, 'F');
-      doc.setFontSize(8);
-      doc.text('Módulo / Componente', 18, 188);
-      doc.text('Código ERP', 75, 188);
-      doc.text('Ubicación', 110, 188);
-      doc.text('Opciones / Accesorios', 135, 188);
-      doc.text('Subtotal', 180, 188);
-
-      let yOffset = 194;
-      lines.forEach((line, idx) => {
-        const lineComponents = placedComponents.filter((c) => c.lineId === line.id || (!c.lineId && idx === 0));
-        if (lineComponents.length === 0) return;
-
-        // Print Line name header
-        if (yOffset > 265) {
-          doc.addPage();
-          yOffset = 20;
-        }
-        doc.setFont('Helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.text(line.name, 15, yOffset);
-        yOffset += 5;
-
-        doc.setFont('Helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(70, 70, 70);
-
-        lineComponents.forEach((c) => {
-          if (yOffset > 275) {
-            doc.addPage();
-            yOffset = 20;
-          }
-          
-          doc.text(c.name, 18, yOffset);
-          doc.text(c.code || '-', 75, yOffset);
-          
-          let locName = t('location.others', 'Otros');
-          if (c.locationId === 0) locName = t('location.pallet_infeed', 'Pallet Infeed');
-          else if (c.locationId === 1) locName = t('location.pallet_outfeed', 'Pallet Outfeed');
-          else if (c.locationId === 2) locName = t('location.product_infeed', 'Product Infeed');
-          doc.text(locName, 110, yOffset);
-
-          const optionsSummary = c.options.map((o) => o.name).join(', ') || 'Ninguno';
-          const croppedOpts = optionsSummary.length > 22 ? optionsSummary.substring(0, 22) + '...' : optionsSummary;
-          doc.text(croppedOpts, 135, yOffset);
-
-          doc.text(`€${c.totalPrice.toLocaleString()}`, 180, yOffset);
-          
-          // Draw thin border line
-          doc.setDrawColor(230, 230, 230);
-          doc.line(15, yOffset + 2, 195, yOffset + 2);
-          yOffset += 6;
-        });
-
-        yOffset += 4;
-      });
-
-      // Total pricing footer
-      if (yOffset > 270) {
-        doc.addPage();
-        yOffset = 20;
-      }
-      doc.setFillColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.rect(15, yOffset, 180, 10, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('PRECIO TOTAL ESTIMADO (Euros):', 20, yOffset + 6.5);
-      doc.text(`EUR €${totalPrice.toLocaleString()}`, 160, yOffset + 6.5);
-
-      // Save PDF
-      const filename = `${projectName.replace(/\s+/g, '_')}_Cotizacion.pdf`;
-      doc.save(filename);
     } catch (err) {
       console.error('Error generating PDF:', err);
+      showToast('error', t('toast.pdf_error', 'No se pudo generar el PDF.'));
     }
+  };
+
+  const handleExportCSV = () => {
+    exportBomCsv({ projectName, lines, placedComponents, t, language });
+  };
+
+  const handleStatusChange = async (status: ProjectStatus) => {
+    if (!currentProjectId) return;
+    setLocalStatus(status);
+    await updateProjectStatus(currentProjectId, status);
+    showToast('success', t('toast.status_updated', 'Estado del proyecto actualizado.'));
+  };
+
+  const handleDuplicate = () => {
+    duplicateProjectAsNew();
+    showToast('success', t('toast.duplicated', 'Proyecto duplicado como copia sin guardar.'));
+  };
+
+  const shareUrl = shareToken ? `${window.location.origin}/share/${shareToken}` : '';
+
+  const handleCopyShareLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    showToast('success', t('toast.share_copied', 'Enlace para compartir copiado al portapapeles.'), 3000);
+  };
+
+  const handleRegenerateShare = async () => {
+    const token = await regenerateShareToken();
+    if (token) {
+      showToast('success', t('toast.share_regenerated', 'Enlace de compartir regenerado.'));
+    } else {
+      showToast('error', t('toast.share_error', 'No se pudo actualizar el enlace de compartir.'));
+    }
+  };
+
+  const handleRevokeShare = async () => {
+    setRevokeOpen(false);
+    await revokeShareToken();
+    showToast('success', t('toast.share_revoked', 'Enlace de compartir revocado.'));
+  };
+
+  const smallBtnStyle: React.CSSProperties = {
+    padding: '7px 12px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   };
 
   return (
@@ -292,7 +240,7 @@ export const TopBar: React.FC = () => {
       )}
 
       {/* Project Meta Info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
         <button
           className="btn-secondary"
           onClick={handleBackToLobby}
@@ -319,9 +267,11 @@ export const TopBar: React.FC = () => {
             ⬅️ {t('topbar.wizard_params', 'Parámetros')}
           </button>
         )}
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h1 style={{ fontSize: '15px', fontWeight: 600 }}>{projectName}</h1>
+            <h1 style={{ fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {projectName}
+            </h1>
             {isReadOnly && (
               <span
                 style={{
@@ -333,9 +283,10 @@ export const TopBar: React.FC = () => {
                   fontSize: '10px',
                   fontWeight: 600,
                   textTransform: 'uppercase',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Vista Compartida (Solo Lectura)
+                {t('topbar.readonly_badge', 'Vista Compartida (Solo Lectura)')}
               </span>
             )}
           </div>
@@ -345,7 +296,7 @@ export const TopBar: React.FC = () => {
         </div>
 
         {/* Multi-line Switcher & Management */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '24px', borderLeft: '1px solid hsl(var(--border-color))', paddingLeft: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px', borderLeft: '1px solid hsl(var(--border-color))', paddingLeft: '16px' }}>
           <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
             {t('topbar.line', 'Línea:')}
           </span>
@@ -359,7 +310,7 @@ export const TopBar: React.FC = () => {
               border: '1px solid hsl(var(--border-color))',
               color: 'hsl(var(--text-primary))',
               cursor: 'pointer',
-              minWidth: '150px'
+              minWidth: '150px',
             }}
             value={activeLineId || ''}
             onChange={(e) => setActiveLineId(e.target.value)}
@@ -375,10 +326,8 @@ export const TopBar: React.FC = () => {
             <button
               className="btn-secondary"
               onClick={() => {
-                const name = prompt(t('topbar.add_line_prompt', 'Nombre de la nueva línea:'), `Línea de Paletizado ${lines.length + 1}`);
-                if (!name) return;
-                const format = confirm(t('topbar.add_line_format_confirm', '¿Es para formato CAJA? (Cancelar para BOLSA)')) ? 'CAJA' : 'BOLSA';
-                addLine(name, format);
+                setAddLineFormat('CAJA');
+                setAddLineOpen(true);
               }}
               style={{
                 padding: '6px 10px',
@@ -395,9 +344,7 @@ export const TopBar: React.FC = () => {
           {!isReadOnly && lines.length > 1 && (
             <button
               onClick={() => {
-                if (activeLineId && confirm(t('topbar.delete_line_confirm', '¿Estás seguro de que deseas eliminar esta línea y todos sus componentes?'))) {
-                  deleteLine(activeLineId);
-                }
+                if (activeLineId) setDeleteLineOpen(true);
               }}
               style={{
                 background: 'rgba(231, 76, 60, 0.1)',
@@ -417,7 +364,7 @@ export const TopBar: React.FC = () => {
       </div>
 
       {/* Actions group */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         {/* Language selector */}
         <select
           className="form-input"
@@ -437,50 +384,60 @@ export const TopBar: React.FC = () => {
           <option value="en">EN</option>
         </select>
 
-        {!isReadOnly && (
-          <button
-            className="btn-secondary"
-            onClick={clearScene}
+        {/* Project status selector */}
+        {!isReadOnly && currentProjectId && (
+          <select
+            className="form-input"
             style={{
-              padding: '8px 16px',
+              padding: '6px 10px',
+              fontSize: '12px',
               borderRadius: '4px',
-              fontSize: '13px',
+              backgroundColor: 'rgba(20,25,40,0.8)',
+              cursor: 'pointer',
+              border: '1px solid hsl(var(--border-color))',
+              color: 'hsl(var(--text-primary))',
             }}
+            value={projectStatus}
+            onChange={(e) => handleStatusChange(e.target.value as ProjectStatus)}
+            title={t('topbar.status_label', 'Estado:')}
           >
+            {PROJECT_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {t(`lobby.status_${s}`, s)}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {!isReadOnly && (
+          <button className="btn-secondary" onClick={() => setResetOpen(true)} style={smallBtnStyle}>
             {t('topbar.reset_btn', 'Resetear')}
           </button>
         )}
 
-        <button
-          className="btn-secondary"
-          onClick={handleExportPDF}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            fontSize: '13px',
-            fontWeight: 500,
-          }}
-        >
+        <button className="btn-secondary" onClick={handleExportCSV} style={smallBtnStyle} title={t('export.csv_btn', 'Exportar CSV')}>
+          📊 CSV
+        </button>
+
+        <button className="btn-secondary" onClick={handleExportPDF} style={smallBtnStyle}>
           📄 {t('topbar.export_pdf_btn', 'Exportar PDF')}
         </button>
 
-        {!isReadOnly && currentProjectId && shareToken && (
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              const url = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
-              navigator.clipboard.writeText(url);
-              setToast({ type: 'success', msg: '¡Enlace de compartir copiado al portapapeles!' });
-              setTimeout(() => setToast(null), 3000);
-            }}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              fontSize: '13px',
-              fontWeight: 500,
-            }}
-          >
-            🔗 Copiar enlace de compartir
+        {!isReadOnly && currentProjectId && (
+          <button className="btn-secondary" onClick={() => setVersionsOpen(true)} style={smallBtnStyle}>
+            🕑 {t('lobby.versions_btn', 'Versiones')}
+          </button>
+        )}
+
+        {!isReadOnly && currentProjectId && (
+          <button className="btn-secondary" onClick={handleDuplicate} style={smallBtnStyle}>
+            📄 {t('topbar.duplicate_btn', 'Duplicar')}
+          </button>
+        )}
+
+        {!isReadOnly && currentProjectId && (
+          <button className="btn-secondary" onClick={() => setShareOpen(true)} style={smallBtnStyle}>
+            🔗 {t('topbar.share_btn', 'Compartir')}
           </button>
         )}
 
@@ -495,12 +452,148 @@ export const TopBar: React.FC = () => {
               fontSize: '13px',
               opacity: saving ? 0.7 : 1,
               cursor: saving ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
             }}
           >
             {saving ? t('topbar.saving_btn', 'Guardando...') : `💾 ${t('topbar.save_quote_btn', 'Guardar Cotización')}`}
           </button>
         )}
       </div>
+
+      {/* ---- Diálogo: agregar línea ---- */}
+      <PromptDialog
+        open={addLineOpen}
+        title={t('modal.add_line_title', 'Agregar nueva línea')}
+        label={t('modal.line_name_label', 'Nombre de la línea')}
+        defaultValue={t('topbar.new_line_default', 'Línea de Paletizado {{n}}', { n: lines.length + 1 })}
+        confirmLabel={t('modal.accept', 'Aceptar')}
+        cancelLabel={t('modal.cancel', 'Cancelar')}
+        onSubmit={(name) => {
+          addLine(name, addLineFormat);
+          setAddLineOpen(false);
+        }}
+        onCancel={() => setAddLineOpen(false)}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <span style={{ fontSize: '13px', color: 'hsl(var(--text-secondary))' }}>
+            {t('modal.format_question', '¿Qué formato usará esta línea?')}
+          </span>
+          <div style={{ display: 'flex', gap: '18px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="topbar-line-format"
+                value="CAJA"
+                checked={addLineFormat === 'CAJA'}
+                onChange={() => setAddLineFormat('CAJA')}
+              />
+              {t('product_type.caja', 'Caja')} (CAJA)
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="topbar-line-format"
+                value="BOLSA"
+                checked={addLineFormat === 'BOLSA'}
+                onChange={() => setAddLineFormat('BOLSA')}
+              />
+              {t('product_type.bolsa', 'Bolsa')} (BOLSA)
+            </label>
+          </div>
+        </div>
+      </PromptDialog>
+
+      {/* ---- Diálogo: eliminar línea ---- */}
+      <ConfirmDialog
+        open={deleteLineOpen}
+        title={t('topbar.delete_line_tooltip', 'Eliminar línea activa')}
+        message={t('modal.confirm_delete_line', '¿Estás seguro de que deseas eliminar esta línea y todos sus componentes?')}
+        confirmLabel={t('modal.accept', 'Aceptar')}
+        cancelLabel={t('modal.cancel', 'Cancelar')}
+        danger
+        onConfirm={() => {
+          if (activeLineId) deleteLine(activeLineId);
+          setDeleteLineOpen(false);
+        }}
+        onCancel={() => setDeleteLineOpen(false)}
+      />
+
+      {/* ---- Diálogo: resetear escena ---- */}
+      <ConfirmDialog
+        open={resetOpen}
+        title={t('topbar.reset_confirm_title', 'Resetear escena')}
+        message={t('topbar.reset_confirm', '¿Deseas resetear la escena? Se eliminarán todos los componentes colocados.')}
+        confirmLabel={t('modal.accept', 'Aceptar')}
+        cancelLabel={t('modal.cancel', 'Cancelar')}
+        danger
+        onConfirm={() => {
+          clearScene();
+          setResetOpen(false);
+        }}
+        onCancel={() => setResetOpen(false)}
+      />
+
+      {/* ---- Modal: compartir proyecto ---- */}
+      <Modal
+        open={shareOpen}
+        title={t('share.title', 'Compartir proyecto')}
+        onClose={() => setShareOpen(false)}
+        maxWidth={520}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {shareToken ? (
+            <>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: 'hsl(var(--text-secondary))' }}>
+                {t('share.link_label', 'Enlace de solo lectura')}
+                <input
+                  className="form-input"
+                  type="text"
+                  readOnly
+                  value={shareUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button className="btn-primary modal-btn" onClick={handleCopyShareLink}>
+                  📋 {t('share.copy_btn', 'Copiar enlace')}
+                </button>
+                <button className="btn-secondary modal-btn" onClick={handleRegenerateShare}>
+                  🔄 {t('share.regenerate_btn', 'Regenerar enlace')}
+                </button>
+                <button className="btn-danger modal-btn" onClick={() => setRevokeOpen(true)}>
+                  🚫 {t('share.revoke_btn', 'Revocar')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: '13px', color: 'hsl(var(--text-muted))', lineHeight: 1.5 }}>
+                {t('share.no_token', 'No hay un enlace activo. Genera uno nuevo para compartir el proyecto.')}
+              </div>
+              <div>
+                <button className="btn-primary modal-btn" onClick={handleRegenerateShare}>
+                  🔄 {t('share.regenerate_btn', 'Regenerar enlace')}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+
+      {/* ---- Diálogo: revocar enlace ---- */}
+      <ConfirmDialog
+        open={revokeOpen}
+        title={t('share.revoke_confirm_title', 'Revocar enlace')}
+        message={t('share.revoke_confirm', '¿Revocar el enlace de compartir? El enlace actual dejará de funcionar para quienes lo tengan.')}
+        confirmLabel={t('share.revoke_btn', 'Revocar')}
+        cancelLabel={t('modal.cancel', 'Cancelar')}
+        danger
+        onConfirm={handleRevokeShare}
+        onCancel={() => setRevokeOpen(false)}
+      />
+
+      {/* ---- Modal: historial de versiones ---- */}
+      <VersionHistoryModal open={versionsOpen} onClose={() => setVersionsOpen(false)} />
     </div>
   );
 };

@@ -1,6 +1,8 @@
 import React, { Suspense, useMemo } from 'react';
 import { useGLTF, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { DEFAULT_DIMENSIONS, GENERIC_DIMENSIONS, parseDimensionToMeters } from '../lib/geometry';
+import { SceneErrorBoundary } from './SceneErrorBoundary';
 
 interface ModelSpecs {
   length?: number | string;
@@ -19,12 +21,77 @@ interface ModelLoaderProps {
   isSelected: boolean;
 }
 
+const SELECTION_EMISSIVE = '#f28b05';
+const SELECTION_EMISSIVE_INTENSITY = 0.25;
+
+interface OrigEmissive {
+  color: number;
+  intensity: number;
+}
+
 // Subcomponent to handle useGLTF safely
-const GLTFModel: React.FC<{ path: string }> = ({ path }) => {
+const GLTFModel: React.FC<{ path: string; isSelected: boolean }> = ({ path, isSelected }) => {
   const { scene } = useGLTF(path);
-  // Clone to avoid sharing materials across multiple instances
-  const clonedScene = scene.clone();
-  
+
+  // Clona la escena y sus materiales UNA sola vez por escena base: así cada
+  // instancia tiene materiales propios y nunca mutamos los compartidos del cache.
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone(true);
+    clone.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.material) return;
+      const cloneMaterial = (mat: THREE.Material): THREE.Material => {
+        const copy = mat.clone();
+        const std = copy as THREE.MeshStandardMaterial;
+        if (std.emissive) {
+          const orig: OrigEmissive = {
+            color: std.emissive.getHex(),
+            intensity: std.emissiveIntensity,
+          };
+          copy.userData.__origEmissive = orig;
+        }
+        return copy;
+      };
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map(cloneMaterial)
+        : cloneMaterial(mesh.material);
+    });
+    return clone;
+  }, [scene]);
+
+  // Libera los materiales clonados al desmontar o al cambiar la escena base.
+  React.useEffect(() => {
+    return () => {
+      clonedScene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!mesh.isMesh || !mesh.material) return;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        mats.forEach((mat) => mat.dispose());
+      });
+    };
+  }, [clonedScene]);
+
+  // Alterna el resaltado emissive de selección sobre los materiales privados del clon.
+  React.useEffect(() => {
+    clonedScene.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.material) return;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mats.forEach((mat) => {
+        const std = mat as THREE.MeshStandardMaterial;
+        if (!std.emissive) return;
+        if (isSelected) {
+          std.emissive.set(SELECTION_EMISSIVE);
+          std.emissiveIntensity = SELECTION_EMISSIVE_INTENSITY;
+        } else {
+          const orig = mat.userData.__origEmissive as OrigEmissive | undefined;
+          std.emissive.setHex(orig ? orig.color : 0x000000);
+          std.emissiveIntensity = orig ? orig.intensity : 1;
+        }
+      });
+    });
+  }, [clonedScene, isSelected]);
+
   return <primitive object={clonedScene} />;
 };
 
@@ -35,77 +102,47 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
   componentType,
   isSelected,
 }) => {
-  // Determine physical dimensions for fallback bounding box (in meters)
-  const toMeters = (val: unknown, defaultVal: number) => {
-    if (typeof val === 'number') {
-      return val > 10 ? val / 1000 : val;
-    }
-    if (typeof val === 'string') {
-      const num = parseFloat(val);
-      if (!isNaN(num)) {
-        return num > 10 ? num / 1000 : num;
+  // Dimensiones físicas (metros) desde la única fuente de verdad: src/lib/geometry.ts
+  const { length, width, height } = useMemo(() => {
+    const base = DEFAULT_DIMENSIONS[componentType] || GENERIC_DIMENSIONS;
+    let l = base.length;
+    let w = base.width;
+    let h = base.height;
+
+    if (specs) {
+      if (specs.length !== undefined && specs.length !== null) {
+        l = parseDimensionToMeters(specs.length, base.length);
+      } else if (
+        componentType === 'conveyor' &&
+        specs.conveyor_length_mm !== undefined &&
+        specs.conveyor_length_mm !== null
+      ) {
+        l = parseDimensionToMeters(specs.conveyor_length_mm, base.length);
+      }
+
+      if (specs.width !== undefined && specs.width !== null) {
+        w = parseDimensionToMeters(specs.width, base.width);
+      } else if (
+        componentType === 'conveyor' &&
+        specs.conveyor_width_mm !== undefined &&
+        specs.conveyor_width_mm !== null
+      ) {
+        w = parseDimensionToMeters(specs.conveyor_width_mm, base.width);
+      }
+
+      if (specs.height !== undefined && specs.height !== null) {
+        h = parseDimensionToMeters(specs.height, base.height);
+      } else if (
+        componentType === 'wrapper' &&
+        specs.max_wrap_height_mm !== undefined &&
+        specs.max_wrap_height_mm !== null
+      ) {
+        h = parseDimensionToMeters(specs.max_wrap_height_mm, base.height);
       }
     }
-    return defaultVal;
-  };
 
-  let defaultLength = 2.0;
-  let defaultWidth = 1.5;
-  let defaultHeight = 1.2;
-
-  if (componentType === 'palletizer') {
-    defaultLength = 2.8;
-    defaultWidth = 2.8;
-    defaultHeight = 3.5;
-  } else if (componentType === 'conveyor') {
-    defaultLength = 2.0;
-    defaultWidth = 1.2;
-    defaultHeight = 0.8;
-  } else if (componentType === 'wrapper') {
-    defaultLength = 2.2;
-    defaultWidth = 2.2;
-    defaultHeight = 2.5;
-  } else if (componentType === 'turn_unit') {
-    defaultLength = 1.5;
-    defaultWidth = 1.5;
-    defaultHeight = 0.9;
-  } else if (componentType === 'pallet_dispenser') {
-    defaultLength = 1.6;
-    defaultWidth = 1.8;
-    defaultHeight = 2.2;
-  } else if (componentType === 'sheet_dispenser') {
-    defaultLength = 1.4;
-    defaultWidth = 1.6;
-    defaultHeight = 1.8;
-  } else if (componentType === 'manipulator') {
-    defaultLength = 0.8;
-    defaultWidth = 0.8;
-    defaultHeight = 1.0;
-  }
-
-  let length = defaultLength;
-  let width = defaultWidth;
-  let height = defaultHeight;
-
-  if (specs) {
-    if (specs.length !== undefined && specs.length !== null) {
-      length = toMeters(specs.length, defaultLength);
-    } else if (componentType === 'conveyor' && specs.conveyor_length_mm !== undefined && specs.conveyor_length_mm !== null) {
-      length = toMeters(specs.conveyor_length_mm, defaultLength);
-    }
-
-    if (specs.width !== undefined && specs.width !== null) {
-      width = toMeters(specs.width, defaultWidth);
-    } else if (componentType === 'conveyor' && specs.conveyor_width_mm !== undefined && specs.conveyor_width_mm !== null) {
-      width = toMeters(specs.conveyor_width_mm, defaultWidth);
-    }
-
-    if (specs.height !== undefined && specs.height !== null) {
-      height = toMeters(specs.height, defaultHeight);
-    } else if (componentType === 'wrapper' && specs.max_wrap_height_mm !== undefined && specs.max_wrap_height_mm !== null) {
-      height = toMeters(specs.max_wrap_height_mm, defaultHeight);
-    }
-  }
+    return { length: l, width: w, height: h };
+  }, [componentType, specs]);
 
   // Memoize geometries based on dimensions
   const boxGeo = useMemo(() => new THREE.BoxGeometry(length, height, width), [length, height, width]);
@@ -114,40 +151,46 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
   // Accent color for selection glow
   const selectionColor = isSelected ? '#f28b05' : '#00e5ff';
 
+  /* Default Fallback Industrial Box Mesh (sin modelo o modelo roto) */
+  const fallbackBox = (
+    <mesh castShadow receiveShadow geometry={boxGeo}>
+      <meshStandardMaterial
+        color={isSelected ? 'hsl(24, 95%, 40%)' : '#1e272e'}
+        roughness={0.2}
+        metalness={0.8}
+        transparent
+        opacity={0.85}
+      />
+      {/* Wireframe helper to outline fallback geometry */}
+      <lineSegments geometry={edgesGeo}>
+        <lineBasicMaterial attach="material" color={selectionColor} linewidth={2} />
+      </lineSegments>
+    </mesh>
+  );
+
   return (
     <group>
-      {/* 3D Model Loader with Fallback Box */}
+      {/* 3D Model Loader with Fallback Box; un GLB roto nunca tumba el canvas */}
       {modelPath ? (
-        <Suspense
-          fallback={
-            <mesh castShadow receiveShadow geometry={boxGeo}>
-              <meshStandardMaterial
-                color="#2c3e50"
-                roughness={0.4}
-                metalness={0.6}
-                transparent
-                opacity={0.6}
-              />
-            </mesh>
-          }
-        >
-          <GLTFModel path={modelPath} />
-        </Suspense>
+        <SceneErrorBoundary resetKey={modelPath} fallback={fallbackBox}>
+          <Suspense
+            fallback={
+              <mesh castShadow receiveShadow geometry={boxGeo}>
+                <meshStandardMaterial
+                  color="#2c3e50"
+                  roughness={0.4}
+                  metalness={0.6}
+                  transparent
+                  opacity={0.6}
+                />
+              </mesh>
+            }
+          >
+            <GLTFModel path={modelPath} isSelected={isSelected} />
+          </Suspense>
+        </SceneErrorBoundary>
       ) : (
-        /* Default Fallback Industrial Box Mesh */
-        <mesh castShadow receiveShadow geometry={boxGeo}>
-          <meshStandardMaterial
-            color={isSelected ? 'hsl(24, 95%, 40%)' : '#1e272e'}
-            roughness={0.2}
-            metalness={0.8}
-            transparent
-            opacity={0.85}
-          />
-          {/* Wireframe helper to outline fallback geometry */}
-          <lineSegments geometry={edgesGeo}>
-            <lineBasicMaterial attach="material" color={selectionColor} linewidth={2} />
-          </lineSegments>
-        </mesh>
+        fallbackBox
       )}
 
       {/* Connection snap points placeholder indicators */}
