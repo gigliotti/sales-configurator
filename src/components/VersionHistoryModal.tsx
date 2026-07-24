@@ -92,7 +92,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({ open, 
                   padding: '10px 12px',
                   border: '1px solid hsl(var(--border-color))',
                   borderRadius: '6px',
-                  backgroundColor: 'rgba(20,25,40,0.5)',
+                  backgroundColor: 'hsl(var(--bg-tertiary) / 0.5)',
                 }}
               >
                 <div style={{ minWidth: 0 }}>

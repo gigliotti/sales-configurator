@@ -1,30 +1,83 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
-:root {
-  /* Color Palette - HSL (Deep Industrial Theme) */
-  --bg-primary: 222 28% 7%;        /* Deep dark background */
-  --bg-secondary: 222 24% 12%;     /* Siderbar, dialog cards */
-  --bg-tertiary: 222 20% 16%;      /* Hover states, inputs */
-  --bg-glass: 222 24% 10% / 0.7;
-  
-  --text-primary: 210 40% 98%;     /* Main text */
-  --text-secondary: 215 15% 72%;   /* Muted text */
-  --text-muted: 215 12% 50%;      /* Muted details */
-  
-  --brand-primary: 24 95% 52%;     /* Verbruggen Hazard Orange */
-  --brand-primary-hover: 24 95% 45%;
-  --brand-secondary: 196 100% 45%; /* Electric Connection Cyan */
-  
-  --state-success: 142 72% 45%;    /* Available / Compatible */
-  --state-warning: 38 92% 50%;     /* Alert / Attention */
-  --state-error: 0 84% 52%;        /* Incompatible / Required */
-  
-  --border-color: 222 20% 18%;
-  --border-glow: 24 95% 52% / 0.15;
-  
+/* ============================================================
+   SISTEMA DE TEMA · Industrial premium
+   Dos mundos deliberados (no uno el inverso del otro):
+   · Oscuro  → "panel de control industrial": grafito cálido + naranja
+   · Claro   → "luz de día / papel de ingeniería + aluminio"
+   El tema se controla con [data-theme] en <html> (ver index.html + useTheme).
+   :root es el tema OSCURO por defecto (identidad del producto); el bloque
+   [data-theme="light"] redefine los mismos tokens para el tema claro, así
+   que cualquier componente que use hsl(var(--token)) cambia solo.
+   ============================================================ */
+:root,
+:root[data-theme="dark"] {
+  /* Grafito cálido (sesgo hacia el naranja = neutro elegido, no heredado) */
+  --bg-primary: 40 12% 5%;         /* Fondo profundo */
+  --bg-secondary: 42 21% 7%;       /* Paneles, tarjetas, diálogos */
+  --bg-tertiary: 42 18% 11%;       /* Inputs, hover */
+  --bg-glass: 42 20% 8% / 0.72;
+
+  --text-primary: 39 45% 92%;      /* Texto principal (hueso cálido) */
+  --text-secondary: 40 14% 61%;
+  --text-muted: 38 11% 39%;
+
+  --brand-primary: 30 95% 49%;     /* Naranja de peligro Verbruggen */
+  --brand-primary-hover: 30 95% 43%;
+  --brand-secondary: 188 53% 55%;  /* Cian blueprint (conexiones/snap) */
+  --on-accent: 30 45% 8%;          /* Texto sobre el naranja */
+
+  --state-success: 142 39% 45%;
+  --state-warning: 44 82% 51%;
+  --state-error: 5 74% 56%;
+
+  --border-color: 38 17% 17%;
+  --border-strong: 40 15% 24%;
+  --border-glow: 30 95% 49% / 0.15;
+
+  /* Helpers para superficies (reemplazan literales rgba que asumían oscuro) */
+  --overlay-soft: rgba(0, 0, 0, 0.28);   /* velo sutil sobre paneles */
+  --fill-faint: rgba(255, 255, 255, 0.035); /* relleno tenue elevado */
+  --scrim: rgba(4, 6, 12, 0.66);         /* fondo de modal */
+  --shadow-card: 0 24px 50px -26px rgba(0, 0, 0, 0.8);
+  --shadow-panel: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 16px 0 hsl(var(--brand-primary) / 0.05);
+
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, 'Roboto Mono', monospace;
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------- TEMA CLARO: "luz de día / papel + aluminio" ---------- */
+:root[data-theme="light"] {
+  --bg-primary: 38 30% 88%;        /* Papel cálido */
+  --bg-secondary: 43 45% 97%;      /* Paneles casi blancos */
+  --bg-tertiary: 39 38% 91%;       /* Inputs, hover */
+  --bg-glass: 43 50% 97% / 0.72;
+
+  --text-primary: 39 17% 11%;      /* Grafito casi negro */
+  --text-secondary: 40 12% 37%;
+  --text-muted: 41 11% 55%;
+
+  --brand-primary: 31 100% 41%;    /* Naranja un punto más profundo p/ contraste */
+  --brand-primary-hover: 31 100% 36%;
+  --brand-secondary: 191 79% 30%;  /* Teal profundo, legible en claro */
+  --on-accent: 40 60% 97%;         /* Texto claro sobre el naranja profundo */
+
+  --state-success: 146 52% 36%;
+  --state-warning: 42 89% 35%;
+  --state-error: 5 66% 46%;
+
+  --border-color: 39 30% 82%;
+  --border-strong: 38 24% 72%;
+  --border-glow: 31 100% 41% / 0.18;
+
+  /* En claro la jerarquía la dan SOMBRAS suaves, no glows */
+  --overlay-soft: rgba(60, 48, 24, 0.05);
+  --fill-faint: rgba(60, 48, 24, 0.04);
+  --scrim: rgba(30, 24, 12, 0.42);
+  --shadow-card: 0 18px 40px -24px rgba(60, 48, 24, 0.28);
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.7), 0 16px 36px -22px rgba(60, 48, 24, 0.26);
 }
 
 * {
@@ -42,6 +95,7 @@ body {
   overflow: hidden;
   height: 100vh;
   width: 100vw;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 /* Custom Scrollbar */
@@ -72,13 +126,12 @@ body {
 }
 
 .glass-panel-glow {
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 
-              0 0 16px 0 rgba(242, 139, 5, 0.05);
+  box-shadow: var(--shadow-panel);
 }
 
 /* Typography Utility */
 .title-gradient {
-  background: linear-gradient(135deg, #ffffff 30%, hsl(var(--brand-primary)) 100%);
+  background: linear-gradient(135deg, hsl(var(--text-primary)) 25%, hsl(var(--brand-primary)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -87,19 +140,19 @@ body {
 
 /* Button Styles */
 .btn-primary {
-  background: linear-gradient(135deg, hsl(var(--brand-primary)), #f39c12);
-  color: #000;
+  background: linear-gradient(135deg, hsl(var(--brand-primary)), hsl(var(--brand-primary-hover)));
+  color: hsl(var(--on-accent));
   border: none;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(242, 139, 5, 0.2);
+  box-shadow: 0 4px 12px hsl(var(--brand-primary) / 0.22);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(242, 139, 5, 0.35);
-  filter: brightness(1.1);
+  box-shadow: 0 6px 16px hsl(var(--brand-primary) / 0.35);
+  filter: brightness(1.08);
 }
 
 .btn-primary:active {
@@ -133,12 +186,13 @@ body {
 
 .form-input:focus {
   border-color: hsl(var(--brand-primary));
-  box-shadow: 0 0 0 2px rgba(242, 139, 5, 0.15);
+  box-shadow: 0 0 0 2px hsl(var(--brand-primary) / 0.18);
 }
 
 .form-select {
   appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+  /* Flecha en gris neutro: legible sobre inputs claros y oscuros */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23999999' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 20px;
@@ -156,12 +210,16 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 139, 5, 0.2); }
-  50% { box-shadow: 0 0 12px 4px rgba(242, 139, 5, 0.1); }
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--brand-primary) / 0.2); }
+  50% { box-shadow: 0 0 12px 4px hsl(var(--brand-primary) / 0.1); }
 }
 
 .pulse-glow-hover:hover {
   animation: pulse-glow 2s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 
 .btn-danger {
@@ -173,6 +231,25 @@ body {
   transition: var(--transition-fast);
 }
 
+/* Toggle de tema (sol/luna) en las barras de navegación */
+.theme-toggle {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px solid hsl(var(--border-color));
+  background: hsl(var(--bg-tertiary));
+  color: hsl(var(--text-secondary));
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.theme-toggle:hover {
+  color: hsl(var(--brand-primary));
+  border-color: hsl(var(--brand-primary) / 0.5);
+}
+.theme-toggle svg { width: 17px; height: 17px; display: block; }
+
 .btn-danger:hover {
   filter: brightness(1.15);
 }
@@ -181,7 +258,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 6, 12, 0.65);
+  background: var(--scrim);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -195,7 +272,7 @@ body {
   border: 1px solid hsl(var(--border-color));
   border-radius: 12px;
   width: 100%;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card);
   outline: none;
 }
 
@@ -276,12 +353,12 @@ body {
 }
 
 .catalog-list::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--overlay-soft);
   border-radius: 4px;
 }
 
 .catalog-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.35);
+  background: hsl(var(--border-strong));
   border-radius: 4px;
 }
 

@@ -10,6 +10,7 @@ import { ModelLoader } from './ModelLoader';
 import { getComponentPhysicalDimensions } from '../lib/geometry';
 import { registerSceneCapture } from '../lib/sceneCapture';
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts';
+import { useTheme } from '../hooks/useTheme';
 
 // Enable global Three.js cache for loaded assets
 THREE.Cache.enabled = true;
@@ -125,13 +126,20 @@ const overlayButtonStyle = (active: boolean, disabled = false): React.CSSPropert
   padding: '6px 12px',
   borderRadius: '4px',
   border: 'none',
-  background: active ? '#f28b05' : 'rgba(255, 255, 255, 0.1)',
-  color: '#fff',
+  background: active ? 'hsl(var(--brand-primary))' : 'var(--fill-faint)',
+  color: active ? 'hsl(var(--on-accent))' : 'hsl(var(--text-primary))',
   cursor: disabled ? 'not-allowed' : 'pointer',
   fontSize: '12px',
   fontWeight: 600,
   opacity: disabled ? 0.4 : 1,
 });
+
+// Colores de escena por tema: oscuro "estudio" / claro "papel de ingeniería".
+const SCENE_BG: Record<'dark' | 'light', string> = { dark: '#070a11', light: '#e7e1d4' };
+const GRID_COLORS: Record<'dark' | 'light', [string, string]> = {
+  dark: ['#243b55', '#101d2c'],
+  light: ['#c2b89f', '#d7cfbc'],
+};
 
 export const Viewport3D: React.FC = () => {
   const {
@@ -164,6 +172,10 @@ export const Viewport3D: React.FC = () => {
 
   // Atajos de teclado del editor (Delete, Ctrl+Z/Y, Escape), activos solo montado.
   useEditorShortcuts();
+
+  const { theme } = useTheme();
+  const sceneBg = SCENE_BG[theme];
+  const gridColors = GRID_COLORS[theme];
 
   const lineComponents = React.useMemo(
     () => placedComponents.filter((c) => c.lineId === activeLineId),
@@ -216,7 +228,7 @@ export const Viewport3D: React.FC = () => {
         position: 'relative',
         width: '100%',
         height: '100%',
-        backgroundColor: '#070a11',
+        backgroundColor: sceneBg,
       }}
     >
       <Canvas
@@ -225,7 +237,7 @@ export const Viewport3D: React.FC = () => {
         onPointerMissed={handleCanvasClick}
         gl={{ preserveDrawingBuffer: true }}
       >
-        <color attach="background" args={['#070a11']} />
+        <color attach="background" args={[sceneBg]} />
 
         <SceneCaptureBridge />
         <CameraFitter fitRef={fitCameraRef} components={lineComponents} orbitRef={orbitRef} />
@@ -247,7 +259,7 @@ export const Viewport3D: React.FC = () => {
         <pointLight position={[-10, 8, -10]} intensity={0.3} />
 
         {/* Floor Grid & Shadow Catcher */}
-        <gridHelper args={[40, 40, '#243b55', '#101d2c']} position={[0, -0.01, 0]} />
+        <gridHelper args={[40, 40, gridColors[0], gridColors[1]]} position={[0, -0.01, 0]} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
           <planeGeometry args={[100, 100]} />
           <shadowMaterial opacity={0.4} />
@@ -355,10 +367,12 @@ export const Viewport3D: React.FC = () => {
           display: 'flex',
           alignItems: 'stretch',
           gap: '8px',
-          background: 'rgba(11, 15, 25, 0.85)',
+          background: 'hsl(var(--bg-secondary) / 0.85)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           padding: '8px',
           borderRadius: '6px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid hsl(var(--border-color))',
         }}
       >
         {selectedComponentUuid && !isReadOnly && (
@@ -383,7 +397,7 @@ export const Viewport3D: React.FC = () => {
               style={{
                 width: '1px',
                 alignSelf: 'stretch',
-                background: 'rgba(255, 255, 255, 0.15)',
+                background: 'hsl(var(--border-strong))',
               }}
             />
           </>

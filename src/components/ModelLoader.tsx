@@ -220,15 +220,17 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
       >
         <div
           style={{
-            background: 'rgba(11, 15, 25, 0.85)',
-            border: `1px solid ${isSelected ? 'hsl(24, 95%, 52%)' : 'rgba(255,255,255,0.1)'}`,
+            background: 'hsl(var(--bg-secondary) / 0.9)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            border: `1px solid ${isSelected ? 'hsl(var(--brand-primary))' : 'hsl(var(--border-color))'}`,
             borderRadius: '4px',
             padding: '2px 8px',
             whiteSpace: 'nowrap',
-            color: isSelected ? 'hsl(24, 95%, 52%)' : '#fff',
+            color: isSelected ? 'hsl(var(--brand-primary))' : 'hsl(var(--text-primary))',
             fontSize: '11px',
             fontWeight: 600,
-            boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--shadow-card)',
           }}
         >
           {name}

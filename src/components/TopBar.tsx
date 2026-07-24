@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/shallow';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
 import type { ProjectStatus } from '../store/useConfiguratorStore';
 import { captureScene } from '../lib/sceneCapture';
+import { ThemeToggle } from './ui/ThemeToggle';
 import { generateQuotePdf } from '../lib/pdfExport';
 import { exportBomCsv } from '../lib/csvExport';
 import { Modal, ConfirmDialog, PromptDialog } from './ui/Modal';
@@ -235,7 +236,7 @@ export const TopBar: React.FC = () => {
             right: '24px',
             padding: '12px 20px',
             borderRadius: '6px',
-            backgroundColor: toast.type === 'success' ? 'rgba(46, 204, 113, 0.95)' : 'rgba(231, 76, 60, 0.95)',
+            backgroundColor: toast.type === 'success' ? 'hsl(var(--state-success))' : 'hsl(var(--state-error))',
             color: '#fff',
             fontSize: '13px',
             fontWeight: 600,
@@ -283,7 +284,7 @@ export const TopBar: React.FC = () => {
             {isReadOnly && (
               <span
                 style={{
-                  backgroundColor: 'rgba(242, 139, 5, 0.15)',
+                  backgroundColor: 'hsl(var(--brand-primary) / 0.15)',
                   border: '1px solid hsl(var(--brand-primary))',
                   color: 'hsl(var(--brand-primary))',
                   padding: '2px 8px',
@@ -314,7 +315,7 @@ export const TopBar: React.FC = () => {
               padding: '6px 12px',
               fontSize: '13px',
               borderRadius: '6px',
-              backgroundColor: 'rgba(20,25,40,0.8)',
+              backgroundColor: 'hsl(var(--bg-tertiary))',
               border: '1px solid hsl(var(--border-color))',
               color: 'hsl(var(--text-primary))',
               cursor: 'pointer',
@@ -355,7 +356,7 @@ export const TopBar: React.FC = () => {
                 if (activeLineId) setDeleteLineOpen(true);
               }}
               style={{
-                background: 'rgba(231, 76, 60, 0.1)',
+                background: 'hsl(var(--state-error) / 0.1)',
                 border: '1px solid hsl(var(--state-error))',
                 color: 'hsl(var(--state-error))',
                 padding: '6px 10px',
@@ -373,6 +374,8 @@ export const TopBar: React.FC = () => {
 
       {/* Actions group */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+        <ThemeToggle />
+
         {/* Language selector */}
         <select
           className="form-input"
@@ -380,7 +383,7 @@ export const TopBar: React.FC = () => {
             padding: '6px 10px',
             fontSize: '12px',
             borderRadius: '4px',
-            backgroundColor: 'rgba(20,25,40,0.8)',
+            backgroundColor: 'hsl(var(--bg-tertiary))',
             cursor: 'pointer',
             border: '1px solid hsl(var(--border-color))',
             color: 'hsl(var(--text-primary))',
@@ -400,7 +403,7 @@ export const TopBar: React.FC = () => {
               padding: '6px 10px',
               fontSize: '12px',
               borderRadius: '4px',
-              backgroundColor: 'rgba(20,25,40,0.8)',
+              backgroundColor: 'hsl(var(--bg-tertiary))',
               cursor: 'pointer',
               border: '1px solid hsl(var(--border-color))',
               color: 'hsl(var(--text-primary))',

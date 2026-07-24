@@ -5,6 +5,18 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>sales-configurator</title>
+    <script>
+      // Fija el tema antes del primer pintado para evitar parpadeo.
+      // Por defecto oscuro (identidad del producto); persistido en localStorage.
+      (function () {
+        try {
+          var t = localStorage.getItem('sc:theme');
+          document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

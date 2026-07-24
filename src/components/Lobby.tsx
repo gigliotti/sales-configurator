@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
 import type { ProjectStatus } from '../store/useConfiguratorStore';
 import { useShallow } from 'zustand/shallow';
+import { ThemeToggle } from './ui/ThemeToggle';
 import { ConfirmDialog } from './ui/Modal';
 import { formatEUR, toNumber } from '../lib/format';
 import { clearDraft, readDraft } from '../lib/draftStorage';
@@ -10,11 +11,13 @@ import type { DraftPayload } from '../lib/draftStorage';
 
 const PAGE_SIZE = 12;
 
+// Badges de estado en tokens semánticos (legibles en ambos temas):
+// borrador → neutro, enviada → cian blueprint, aprobada → éxito, rechazada → error.
 const STATUS_COLORS: Record<ProjectStatus, { bg: string; fg: string; border: string }> = {
-  draft: { bg: 'rgba(148, 163, 184, 0.12)', fg: '#94a3b8', border: 'rgba(148, 163, 184, 0.4)' },
-  sent: { bg: 'rgba(59, 130, 246, 0.12)', fg: '#60a5fa', border: 'rgba(59, 130, 246, 0.45)' },
-  approved: { bg: 'rgba(34, 197, 94, 0.12)', fg: '#4ade80', border: 'rgba(34, 197, 94, 0.45)' },
-  rejected: { bg: 'rgba(239, 68, 68, 0.12)', fg: '#f87171', border: 'rgba(239, 68, 68, 0.45)' },
+  draft: { bg: 'var(--fill-faint)', fg: 'hsl(var(--text-muted))', border: 'hsl(var(--border-strong))' },
+  sent: { bg: 'hsl(var(--brand-secondary) / 0.14)', fg: 'hsl(var(--brand-secondary))', border: 'hsl(var(--brand-secondary) / 0.4)' },
+  approved: { bg: 'hsl(var(--state-success) / 0.14)', fg: 'hsl(var(--state-success))', border: 'hsl(var(--state-success) / 0.45)' },
+  rejected: { bg: 'hsl(var(--state-error) / 0.14)', fg: 'hsl(var(--state-error))', border: 'hsl(var(--state-error) / 0.45)' },
 };
 
 function normalizeStatus(status?: string): ProjectStatus {
@@ -198,7 +201,7 @@ export const Lobby: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'radial-gradient(circle at center, #111625 0%, #080a10 100%)',
+        background: 'radial-gradient(circle at center, hsl(var(--bg-secondary)) 0%, hsl(var(--bg-primary)) 100%)',
         padding: '24px',
         color: 'hsl(var(--text-primary))',
         fontFamily: 'Inter, system-ui, sans-serif',
@@ -214,7 +217,7 @@ export const Lobby: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           maxHeight: '90vh',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.4)',
+          boxShadow: 'var(--shadow-card)',
         }}
       >
         {/* Unsaved Draft Banner */}
@@ -227,11 +230,11 @@ export const Lobby: React.FC = () => {
               justifyContent: 'space-between',
               gap: '16px',
               flexWrap: 'wrap',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              borderBottom: '1px solid rgba(245, 158, 11, 0.35)',
+              backgroundColor: 'hsl(var(--state-warning) / 0.1)',
+              borderBottom: '1px solid hsl(var(--state-warning) / 0.35)',
             }}
           >
-            <span style={{ fontSize: '13px', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: 'hsl(var(--state-warning))', display: 'flex', alignItems: 'center', gap: '8px' }}>
               📝 {t('autosave.banner', 'Tienes un borrador sin guardar del {{date}}', { date: draftDate })}
             </span>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -261,7 +264,7 @@ export const Lobby: React.FC = () => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            backgroundColor: 'rgba(0,0,0,0.3)',
+            backgroundColor: 'var(--overlay-soft)',
           }}
         >
           <div>
@@ -281,8 +284,9 @@ export const Lobby: React.FC = () => {
             </h1>
           </div>
 
-          {/* Language Switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Theme + Language Switchers */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ThemeToggle />
             <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
               {language === 'es' ? 'Idioma:' : 'Language:'}
             </span>
@@ -292,7 +296,7 @@ export const Lobby: React.FC = () => {
                 padding: '6px 12px',
                 fontSize: '13px',
                 borderRadius: '6px',
-                backgroundColor: 'rgba(20,25,40,0.8)',
+                backgroundColor: 'hsl(var(--bg-tertiary))',
                 cursor: 'pointer',
               }}
               value={language}
@@ -310,7 +314,7 @@ export const Lobby: React.FC = () => {
             style={{
               padding: '20px 32px',
               borderBottom: '1px solid hsl(var(--border-color))',
-              backgroundColor: 'rgba(0,0,0,0.15)',
+              backgroundColor: 'var(--overlay-soft)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -370,7 +374,7 @@ export const Lobby: React.FC = () => {
                   padding: '8px 12px',
                   fontSize: '13px',
                   borderRadius: '6px',
-                  backgroundColor: 'rgba(20,25,40,0.8)',
+                  backgroundColor: 'hsl(var(--bg-tertiary))',
                   cursor: 'pointer',
                 }}
               >
@@ -434,7 +438,7 @@ export const Lobby: React.FC = () => {
         {/* Projects Grid/List or Login Form */}
         <div style={{ padding: '32px', flex: 1, overflowY: 'auto' }}>
           {!activeProfile ? (
-            <div style={{ maxWidth: '400px', margin: '40px auto', padding: '32px', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid hsl(var(--border-color))', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)' }}>
+            <div style={{ maxWidth: '400px', margin: '40px auto', padding: '32px', backgroundColor: 'var(--fill-faint)', border: '1px solid hsl(var(--border-color))', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)' }}>
               <h2 style={{ fontSize: '22px', fontWeight: 600, marginBottom: '24px', textAlign: 'center', color: 'hsl(var(--brand-primary))' }}>
                 {t('login.title_form', 'Iniciar Sesión')}
               </h2>
@@ -450,7 +454,7 @@ export const Lobby: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="form-input"
-                    style={{ padding: '10px 14px', borderRadius: '6px', fontSize: '14px', width: '100%', backgroundColor: 'rgba(20,25,40,0.8)' }}
+                    style={{ padding: '10px 14px', borderRadius: '6px', fontSize: '14px', width: '100%', backgroundColor: 'hsl(var(--bg-tertiary))' }}
                     placeholder={t('login.email_placeholder', 'ejemplo@correo.com')}
                   />
                 </div>
@@ -465,7 +469,7 @@ export const Lobby: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="form-input"
-                    style={{ padding: '10px 14px', borderRadius: '6px', fontSize: '14px', width: '100%', backgroundColor: 'rgba(20,25,40,0.8)' }}
+                    style={{ padding: '10px 14px', borderRadius: '6px', fontSize: '14px', width: '100%', backgroundColor: 'hsl(var(--bg-tertiary))' }}
                     placeholder={t('login.password_placeholder', '••••••••')}
                   />
                 </div>
@@ -502,7 +506,7 @@ export const Lobby: React.FC = () => {
               style={{
                 padding: '48px',
                 textAlign: 'center',
-                backgroundColor: 'rgba(255,255,255,0.01)',
+                backgroundColor: 'var(--fill-faint)',
                 border: '1px dashed hsl(var(--border-color))',
                 borderRadius: '12px',
                 color: 'hsl(var(--text-muted))',
@@ -643,7 +647,7 @@ export const Lobby: React.FC = () => {
                               <button
                                 onClick={(e) => handleDelete(e, p.id)}
                                 style={{
-                                  background: 'rgba(231, 76, 60, 0.1)',
+                                  background: 'hsl(var(--state-error) / 0.1)',
                                   border: '1px solid hsl(var(--state-error))',
                                   color: 'hsl(var(--state-error))',
                                   padding: '6px 10px',
@@ -657,7 +661,7 @@ export const Lobby: React.FC = () => {
                                   e.currentTarget.style.color = '#fff';
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'rgba(231, 76, 60, 0.1)';
+                                  e.currentTarget.style.backgroundColor = 'hsl(var(--state-error) / 0.1)';
                                   e.currentTarget.style.color = 'hsl(var(--state-error))';
                                 }}
                                 title={t('project.delete_title', 'Eliminar Proyecto')}

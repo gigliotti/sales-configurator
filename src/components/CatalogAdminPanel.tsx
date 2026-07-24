@@ -630,7 +630,7 @@ export const CatalogAdminPanel: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
-        background: 'radial-gradient(circle at center, #111625 0%, #080a10 100%)',
+        background: 'radial-gradient(circle at center, hsl(var(--bg-secondary)) 0%, hsl(var(--bg-primary)) 100%)',
         color: 'hsl(var(--text-primary))',
         fontFamily: 'Inter, system-ui, sans-serif',
       }}
@@ -647,7 +647,7 @@ export const CatalogAdminPanel: React.FC = () => {
             right: '24px',
             padding: '12px 20px',
             borderRadius: '6px',
-            backgroundColor: toast.type === 'success' ? 'rgba(46, 204, 113, 0.95)' : 'rgba(231, 76, 60, 0.95)',
+            backgroundColor: toast.type === 'success' ? 'hsl(var(--state-success))' : 'hsl(var(--state-error))',
             color: '#fff',
             fontSize: '13px',
             fontWeight: 600,
@@ -667,7 +667,7 @@ export const CatalogAdminPanel: React.FC = () => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: 'rgba(0,0,0,0.3)',
+          backgroundColor: 'var(--overlay-soft)',
         }}
       >
         <div>
@@ -709,7 +709,7 @@ export const CatalogAdminPanel: React.FC = () => {
             flexDirection: 'column',
             borderRadius: '12px',
             border: '1px solid hsl(var(--border-color))',
-            backgroundColor: 'rgba(255,255,255,0.01)',
+            backgroundColor: 'var(--fill-faint)',
             padding: '20px',
             maxHeight: 'calc(100vh - 120px)',
           }}
@@ -740,7 +740,7 @@ export const CatalogAdminPanel: React.FC = () => {
               className="form-input"
               value={selectedTypeIdFilter}
               onChange={(e) => setSelectedTypeIdFilter(e.target.value)}
-              style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
+              style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '6px', backgroundColor: 'hsl(var(--bg-tertiary))' }}
             >
               <option value="all">{t('admin.all_types', 'Todos los tipos')}</option>
               {componentTypes.map((tp) => (
@@ -797,8 +797,8 @@ export const CatalogAdminPanel: React.FC = () => {
                         ? '1px solid hsl(var(--brand-primary))'
                         : '1px solid hsl(var(--border-color) / 0.4)',
                       backgroundColor: isSelected
-                        ? 'rgba(var(--brand-primary-rgb), 0.1)'
-                        : 'rgba(255,255,255,0.01)',
+                        ? 'hsl(var(--brand-primary) / 0.1)'
+                        : 'var(--fill-faint)',
                       cursor: 'pointer',
                       transition: 'background-color 0.2s, border-color 0.2s',
                     }}
@@ -812,8 +812,8 @@ export const CatalogAdminPanel: React.FC = () => {
                           fontSize: '10px',
                           padding: '2px 6px',
                           borderRadius: '4px',
-                          backgroundColor: comp.available ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)',
-                          color: comp.available ? 'hsl(145, 80%, 45%)' : 'hsl(0, 80%, 60%)',
+                          backgroundColor: comp.available ? 'hsl(var(--state-success) / 0.15)' : 'hsl(var(--state-error) / 0.15)',
+                          color: comp.available ? 'hsl(var(--state-success))' : 'hsl(var(--state-error))',
                         }}
                       >
                         {comp.available ? t('admin.active', 'Activo') : t('admin.inactive', 'Inactivo')}
@@ -891,7 +891,7 @@ export const CatalogAdminPanel: React.FC = () => {
             flex: 1,
             borderRadius: '12px',
             border: '1px solid hsl(var(--border-color))',
-            backgroundColor: 'rgba(255,255,255,0.01)',
+            backgroundColor: 'var(--fill-faint)',
             padding: '24px',
             overflowY: 'auto',
             maxHeight: 'calc(100vh - 120px)',
@@ -901,7 +901,7 @@ export const CatalogAdminPanel: React.FC = () => {
             <div
               role="alert"
               style={{
-                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                backgroundColor: 'hsl(var(--state-error) / 0.1)',
                 border: '1px solid hsl(var(--state-error))',
                 color: 'hsl(var(--state-error))',
                 padding: '12px',
@@ -1002,7 +1002,7 @@ export const CatalogAdminPanel: React.FC = () => {
                     value={componentTypeId}
                     onChange={(e) => handleTypeChange(e.target.value)}
                     disabled={!isCreatingNew}
-                    style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: isCreatingNew ? 'rgba(20,25,40,0.8)' : 'rgba(20,25,40,0.4)' }}
+                    style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: isCreatingNew ? 'hsl(var(--bg-tertiary))' : 'hsl(var(--bg-tertiary) / 0.4)' }}
                   >
                     {componentTypes.map((tp) => (
                       <option key={tp.id} value={String(tp.id)}>
@@ -1021,7 +1021,7 @@ export const CatalogAdminPanel: React.FC = () => {
                     className="form-input"
                     value={locationId}
                     onChange={(e) => setLocationId(e.target.value)}
-                    style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
+                    style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'hsl(var(--bg-tertiary))' }}
                   >
                     <option value="">{t('admin.location_none', 'Ninguna / No aplica')}</option>
                     {locations.map((loc) => (
@@ -1064,7 +1064,7 @@ export const CatalogAdminPanel: React.FC = () => {
               </div>
 
               {/* Checkboxes group for soft-delete & junctions */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '8px', border: '1px solid hsl(var(--border-color) / 0.3)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: 'var(--fill-faint)', padding: '16px', borderRadius: '8px', border: '1px solid hsl(var(--border-color) / 0.3)' }}>
                 {/* Available toggle */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input
@@ -1168,7 +1168,7 @@ export const CatalogAdminPanel: React.FC = () => {
                                 className="form-input"
                                 value={currentVal}
                                 onChange={(e) => handleSpecInputChange(f.field, e.target.value)}
-                                style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
+                                style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'hsl(var(--bg-tertiary))' }}
                               >
                                 <option value="">{t('admin.select_placeholder', 'Seleccionar...')}</option>
                                 {f.options.map((opt) => (
@@ -1192,7 +1192,7 @@ export const CatalogAdminPanel: React.FC = () => {
                                 className="form-input"
                                 value={currentVal}
                                 onChange={(e) => handleSpecInputChange(f.field, e.target.value)}
-                                style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(20,25,40,0.8)' }}
+                                style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'hsl(var(--bg-tertiary))' }}
                               >
                                 <option value="">{t('admin.select_orientation_placeholder', 'Seleccionar orientación...')}</option>
                                 {orientations.map((o) => (
