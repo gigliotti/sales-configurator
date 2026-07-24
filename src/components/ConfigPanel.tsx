@@ -154,6 +154,10 @@ export const ConfigPanel: React.FC = () => {
     return t('config.option', 'Opción');
   };
 
+  // Derivados de presentación para la caja de presupuesto (solo lectura).
+  const budgetPct = params.maxBudget > 0 ? Math.min(100, (totalPrice / params.maxBudget) * 100) : 0;
+  const overBudget = totalPrice > params.maxBudget;
+
   return (
     <div
       className="glass-panel"
@@ -171,12 +175,11 @@ export const ConfigPanel: React.FC = () => {
     >
       {selectedComp ? (
         /* Component Specific Settings */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* Cabecera del módulo */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', color: 'hsl(var(--brand-secondary))', fontWeight: 600, textTransform: 'uppercase' }}>
-                {t('config.module_details', 'Detalles del Módulo')}
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+              <span className="sc-eyebrow">{t('config.module_details', 'Detalles del Módulo')}</span>
               <button
                 onClick={() => selectComponent(null)}
                 aria-label={t('config.back_btn', 'Volver')}
@@ -191,13 +194,13 @@ export const ConfigPanel: React.FC = () => {
                 {t('config.back_btn', 'Volver')}
               </button>
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, marginTop: '4px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, marginTop: '6px' }}>
               {selectedComp.componentType ? t(`component.${selectedComp.componentType}`, selectedComp.name) : selectedComp.name}
             </h3>
             {selectedComp.code && (
-              <span style={{ fontSize: '11px', color: 'hsl(var(--text-muted))', display: 'block', marginTop: '2px' }}>
-                {t('config.erp_code', 'Código ERP')}: {selectedComp.code}
-              </span>
+              <div className="sc-mono" style={{ fontSize: '11px', color: 'hsl(var(--text-muted))', marginTop: '3px' }}>
+                {t('config.erp_code', 'Código ERP')} · {selectedComp.code}
+              </div>
             )}
             {!isReadOnly && (
               <div style={{ marginTop: '12px' }}>
@@ -245,17 +248,16 @@ export const ConfigPanel: React.FC = () => {
             )}
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid hsl(var(--border-color))' }} />
+          <div className="sc-divider" />
 
-          {/* 3D Translation controls */}
+          {/* Controles 3D */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', color: 'hsl(var(--text-muted))' }}>
-              {t('config.location_3d', 'Ubicación en escena 3D')}
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                <label htmlFor="config-position-x">{t('config.position_x', 'Posición X (Lateral)')}</label>
-                <span>{selectedComp.position[0].toFixed(2)}m</span>
+            <span className="sc-eyebrow">{t('config.location_3d', 'Ubicación en escena 3D')}</span>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                <label htmlFor="config-position-x" className="sc-eyebrow">{t('config.position_x', 'Posición X (Lateral)')}</label>
+                <span className="sc-mono" style={{ fontSize: '12px', color: 'hsl(var(--text-primary))' }}>{selectedComp.position[0].toFixed(2)}m</span>
               </div>
               <input
                 id="config-position-x"
@@ -269,11 +271,11 @@ export const ConfigPanel: React.FC = () => {
                 style={{ accentColor: 'hsl(var(--brand-primary))', cursor: isReadOnly ? 'not-allowed' : 'ew-resize' }}
               />
             </div>
- 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                <label htmlFor="config-position-z">{t('config.position_z', 'Posición Z (Frente/Fondo)')}</label>
-                <span>{selectedComp.position[2].toFixed(2)}m</span>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                <label htmlFor="config-position-z" className="sc-eyebrow">{t('config.position_z', 'Posición Z (Frente/Fondo)')}</label>
+                <span className="sc-mono" style={{ fontSize: '12px', color: 'hsl(var(--text-primary))' }}>{selectedComp.position[2].toFixed(2)}m</span>
               </div>
               <input
                 id="config-position-z"
@@ -287,11 +289,11 @@ export const ConfigPanel: React.FC = () => {
                 style={{ accentColor: 'hsl(var(--brand-primary))', cursor: isReadOnly ? 'not-allowed' : 'ew-resize' }}
               />
             </div>
- 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                <label htmlFor="config-rotation-y">{t('config.rotation_y', 'Rotación Y (Ángulo)')}</label>
-                <span>{Math.round((selectedComp.rotation[1] * 180) / Math.PI)}°</span>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                <label htmlFor="config-rotation-y" className="sc-eyebrow">{t('config.rotation_y', 'Rotación Y (Ángulo)')}</label>
+                <span className="sc-mono" style={{ fontSize: '12px', color: 'hsl(var(--text-primary))' }}>{Math.round((selectedComp.rotation[1] * 180) / Math.PI)}°</span>
               </div>
               <input
                 id="config-rotation-y"
@@ -307,13 +309,13 @@ export const ConfigPanel: React.FC = () => {
             </div>
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid hsl(var(--border-color))' }} />
+          <div className="sc-divider" />
 
-          {/* Configuration / Options */}
+          {/* Accesorios */}
           <div>
-            <h4 style={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', color: 'hsl(var(--text-muted))', marginBottom: '10px' }}>
+            <span className="sc-eyebrow" style={{ display: 'block', marginBottom: '10px' }}>
               {t('config.accessories_title', 'Accesorios y Configuraciones')}
-            </h4>
+            </span>
 
             {loadingOptions ? (
               <div style={{ fontSize: '12px', color: 'hsl(var(--brand-primary))' }}>{t('config.loading_acc', 'Cargando accesorios...')}</div>
@@ -334,7 +336,7 @@ export const ConfigPanel: React.FC = () => {
                       : selectedComp.componentType === 'turn_unit'
                       ? 'turn_unit_config'
                       : 'wrapper_config';
-                  
+
                   const isChecked = selectedComp.options.some((o) => o.id === opt.id && o.optionType === optionType);
 
                   return (
@@ -363,7 +365,7 @@ export const ConfigPanel: React.FC = () => {
                         />
                         <span style={{ fontSize: '12px', paddingRight: '4px' }}>{getOptionLabel(optionType, opt)}</span>
                       </div>
-                      <span style={{ fontSize: '12px', color: 'hsl(var(--brand-primary))', fontWeight: 600 }}>
+                      <span className="sc-mono" style={{ fontSize: '12px', color: 'hsl(var(--brand-primary))', fontWeight: 600 }}>
                         +{formatEUR(toNumber(opt.price_eur), language)}
                       </span>
                     </label>
@@ -373,13 +375,13 @@ export const ConfigPanel: React.FC = () => {
             )}
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid hsl(var(--border-color))' }} />
+          <div className="sc-divider" />
 
-          {/* Pricing and Deletion */}
+          {/* Costo del módulo y eliminación */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'hsl(var(--text-secondary))' }}>{t('config.module_cost', 'Costo del Módulo')}</span>
-              <span style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+              <span className="sc-mono" style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
                 {formatEUR(selectedComp.totalPrice, language)}
               </span>
             </div>
@@ -408,73 +410,45 @@ export const ConfigPanel: React.FC = () => {
         /* Project Summary View */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
           <div>
-            <span style={{ fontSize: '11px', color: 'hsl(var(--brand-primary))', fontWeight: 600, textTransform: 'uppercase' }}>
+            <span className="sc-eyebrow" style={{ color: 'hsl(var(--brand-primary))' }}>
               {t('config.quote_summary', 'Resumen de Cotización')}
             </span>
-            <h3 style={{ fontSize: '20px', fontWeight: 600, marginTop: '2px' }}>{t('config.line_details', 'Detalles de la Línea')}</h3>
+            <h3 style={{ fontSize: '20px', fontWeight: 600, marginTop: '4px' }}>{t('config.line_details', 'Detalles de la Línea')}</h3>
           </div>
 
-          {/* Global Price display */}
-          <div
-            style={{
-              padding: '20px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, hsl(var(--bg-tertiary)) 0%, hsl(var(--brand-primary) / 0.05) 100%)',
-              border: '1px solid hsl(var(--border-color))',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-            }}
-          >
-            <span style={{ fontSize: '12px', color: 'hsl(var(--text-secondary))' }}>{t('config.total_price_label', 'PRECIO TOTAL ESTIMADO')}</span>
-            <span style={{ fontSize: '28px', fontWeight: 700, color: 'hsl(var(--brand-primary))' }}>
+          {/* Caja de precio total */}
+          <div className="sc-total" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <span className="sc-eyebrow">{t('config.total_price_label', 'PRECIO TOTAL ESTIMADO')}</span>
+            <span className="sc-mono" style={{ fontSize: '29px', fontWeight: 700, color: 'hsl(var(--brand-primary))', lineHeight: 1 }}>
               {formatEUR(totalPrice, language)}
             </span>
-            <span style={{ fontSize: '11px', color: 'hsl(var(--text-muted))' }}>
-              {t('config.budget_limit', 'Presupuesto Límite')}: {formatEUR(params.maxBudget, language)}
-            </span>
+            <div className={overBudget ? 'sc-meter warn' : 'sc-meter'}>
+              <i style={{ width: `${budgetPct}%` }} />
+            </div>
+            <small className="sc-mono" style={{ fontSize: '11px', color: 'hsl(var(--text-muted))' }}>
+              {Math.round(budgetPct)}% {t('config.budget_of', 'de')} {formatEUR(params.maxBudget, language)} · {t('config.budget_noun', 'presupuesto')}
+            </small>
           </div>
 
           {/* Validation Warnings list */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', color: 'hsl(var(--text-muted))', letterSpacing: '0.5px' }}>
+            <span className="sc-eyebrow">
               {t('config.rules_validations', 'Reglas y Validaciones')} ({validationWarnings.length})
-            </h4>
+            </span>
 
             {validationWarnings.length === 0 ? (
-              <div
-                style={{
-                  padding: '16px',
-                  borderRadius: '6px',
-                  backgroundColor: 'hsl(var(--state-success) / 0.05)',
-                  border: '1px solid hsl(var(--state-success) / 0.2)',
-                  color: 'hsl(var(--state-success))',
-                  fontSize: '13px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                {t('config.all_compatible', '✅ Todos los parámetros y acoplamientos son compatibles.')}
+              <div className="sc-alert ok">
+                <span className="b" />
+                <span>{t('config.all_compatible', '✅ Todos los parámetros y acoplamientos son compatibles.')}</span>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {validationWarnings.map((warn, idx) => {
                   const isError = warn.severity === 'error';
                   return (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '12px',
-                        borderRadius: '6px',
-                        backgroundColor: isError ? 'hsl(var(--state-error) / 0.05)' : 'hsl(var(--state-warning) / 0.05)',
-                        border: `1px solid ${isError ? 'hsl(var(--state-error) / 0.2)' : 'hsl(var(--state-warning) / 0.2)'}`,
-                        color: isError ? 'hsl(var(--state-error))' : 'hsl(var(--state-warning))',
-                        fontSize: '12px',
-                        lineHeight: '1.4',
-                      }}
-                    >
-                      {isError ? '🚨 ' : '⚠️ '} {warn.code ? t('warning.' + warn.code, warn.message, warn.params) : warn.message}
+                    <div key={idx} className={isError ? 'sc-alert err' : 'sc-alert warn'}>
+                      <span className="b" />
+                      <span>{warn.code ? t('warning.' + warn.code, warn.message, warn.params) : warn.message}</span>
                     </div>
                   );
                 })}

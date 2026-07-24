@@ -36,21 +36,17 @@
   "wizard.base_transport_type_desc": "Defines whether the line will run on rollers or chains. Conveyors will be filtered according to this choice.",
   "wizard.init_builder_btn": "Initialize 3D Builder",
   "wizard.over_budget": "Over budget",
-
   "product_type.caja": "Box",
   "product_type.bolsa": "Bag",
   "product_type.caja_desc": "Box (Cardboard boxes, trays)",
   "product_type.bolsa_desc": "Bag / Sack (Birdseed, potatoes, onions)",
-
   "wrap_type.red_desc": "Stretch Hood / Netting",
   "wrap_type.film_desc": "Traditional Stretch Film",
-
   "transport_type.rodillo": "Roller",
   "transport_type.cadena": "Chain",
   "transport_type.none": "None",
   "transport_type.rodillo_desc": "Roller Conveyors (Roller)",
   "transport_type.cadena_desc": "Chain Conveyors (Chain)",
-
   "specs.length": "Length",
   "specs.width": "Width",
   "specs.height": "Height",
@@ -62,7 +58,6 @@
   "specs.rotation": "Rotation",
   "specs.capacity": "Capacity",
   "specs.thickness": "Thickness",
-
   "component.palletizer": "Palletizer",
   "component.conveyor": "Conveyor",
   "component.infeed": "Infeed",
@@ -77,12 +72,10 @@
   "component.safety": "Safety",
   "component.platform": "Platform",
   "component.support_frame": "Support Frame",
-
   "location.pallet_infeed": "Pallet Infeed",
   "location.pallet_outfeed": "Pallet Outfeed",
   "location.product_infeed": "Product Infeed",
   "location.others": "Others",
-
   "sidebar.configuring": "Configuring",
   "sidebar.configurator": "Configurator",
   "sidebar.tab_pallet_in": "Pallet In",
@@ -95,7 +88,6 @@
   "sidebar.replace_btn": "Replace",
   "sidebar.add_btn": "Add",
   "sidebar.replacing_hint": "Replacing: {{name}}",
-
   "topbar.lobby_panel": "Panel",
   "topbar.wizard_params": "Parameters",
   "topbar.line": "Line:",
@@ -115,7 +107,6 @@
   "topbar.readonly_badge": "Shared View (Read-Only)",
   "topbar.share_btn": "Share",
   "topbar.new_line_default": "Palletizing Line {{n}}",
-
   "project.client": "Client",
   "project.unspecified": "Not specified",
   "project.remove_favorite": "Remove from Favorites",
@@ -123,7 +114,6 @@
   "project.estimated_price": "Estimated Price",
   "project.delete_title": "Delete Project",
   "project.load_btn": "Load",
-
   "lobby.title": "Saved Projects Panel",
   "lobby.active_user": "Active User:",
   "lobby.anonymous": "Anonymous / Public View",
@@ -147,10 +137,8 @@
   "lobby.filter_status_all": "All statuses",
   "lobby.page_prev": "Previous page",
   "lobby.page_next": "Next page",
-
   "role.admin": "Admin",
   "role.seller": "Seller",
-
   "login.title_form": "Sign In",
   "login.email_label": "Email Address",
   "login.email_placeholder": "example@mail.com",
@@ -158,7 +146,6 @@
   "login.password_placeholder": "••••••••",
   "login.submit_btn": "Sign In",
   "login.failed_error": "Invalid email or password",
-
   "config.coupling": "Coupling",
   "config.variant": "Variant",
   "config.brake": "Brake",
@@ -187,10 +174,8 @@
   "config.rules_validations": "Rules and Validations",
   "config.all_compatible": "✅ All parameters and couplings are compatible.",
   "config.select_component_hint": "Select a component in the 3D scene to adjust its position, rotation or optional accessories.",
-
   "yes": "Yes",
   "no": "No",
-
   "warning.no_palletizer": "A V-STACK Palletizer is required on the line.",
   "warning.mainframe_conflict": "Conflict: The MainFrame already includes an integrated Sheet Dispenser. Remove the external SheetDispenser.",
   "warning.tube_manipulator_limit": "The product weight ({{weight}} kg) exceeds the Tube Manipulator limit (25 kg).",
@@ -200,7 +185,6 @@
   "warning.pallet_width_conveyor_limit": "The pallet width ({{value}} mm) exceeds the capacity of conveyor {{name}} ({{max}} mm).",
   "warning.pallet_height_wrapper_limit": "The total wrap height ({{value}} mm) exceeds the limit of wrapper {{name}} ({{max}} mm).",
   "warning.budget_exceeded": "The total cost (€{{cost}}) exceeds the client's budget (€{{budget}}).",
-
   "toast.save_success": "Quote saved successfully.",
   "toast.save_error": "Error saving the quote. Please try again.",
   "toast.share_copied": "Share link copied to clipboard.",
@@ -212,7 +196,6 @@
   "toast.share_revoked": "Share link revoked.",
   "toast.share_error": "The share link could not be updated.",
   "toast.pdf_error": "The PDF could not be generated.",
-
   "share.title": "Share project",
   "share.link_label": "Read-only link",
   "share.copy_btn": "Copy link",
@@ -221,7 +204,6 @@
   "share.revoke_confirm_title": "Revoke link",
   "share.revoke_confirm": "Revoke the share link? The current link will stop working for anyone who has it.",
   "share.no_token": "There is no active link. Generate a new one to share the project.",
-
   "modal.confirm_delete_project": "Are you sure you want to delete this project? This action cannot be undone.",
   "modal.confirm_delete_line": "Are you sure you want to delete this line and all its components?",
   "modal.add_line_title": "Add new line",
@@ -230,14 +212,12 @@
   "modal.cancel": "Cancel",
   "modal.accept": "Accept",
   "modal.delete": "Delete",
-
   "editor.undo": "Undo",
   "editor.redo": "Redo",
   "editor.fit_camera": "Fit camera",
   "editor.move_xz": "Move XZ",
   "editor.rotate_y": "Rotate Y",
   "editor.delete_shortcut_hint": "Press Delete to remove the selected module",
-
   "pdf.quote_title": "Palletizing Line Quote",
   "pdf.client_details": "Client Details",
   "pdf.params_title": "Project Parameters",
@@ -266,9 +246,7 @@
   "pdf.param_load_height": "Load Height (mm)",
   "pdf.param_wrap": "Wrapping",
   "pdf.na": "N/A",
-
   "export.csv_btn": "Export CSV",
-
   "csv.header_line": "Line",
   "csv.header_module": "Module",
   "csv.header_code": "ERP Code",
@@ -278,7 +256,6 @@
   "csv.header_base_price": "Base price",
   "csv.header_options_price": "Options price",
   "csv.header_subtotal": "Subtotal",
-
   "versions.title": "Version History",
   "versions.restore_btn": "Restore",
   "versions.empty": "No saved versions.",
@@ -286,17 +263,14 @@
   "versions.version_label": "Version {{version}}",
   "versions.confirm_restore_title": "Restore version",
   "versions.confirm_restore": "Restore version {{version}}? The current scene will be replaced.",
-
   "autosave.restored_hint": "An automatically saved draft was restored.",
   "autosave.discard": "Discard draft",
   "autosave.banner": "You have an unsaved draft from {{date}}",
   "autosave.continue": "Continue",
-
   "share.loading": "Loading shared project...",
   "share.error_title": "Could not load the shared project",
   "share.error_desc": "The link is invalid or has expired.",
   "share.go_projects": "Go to Projects",
-
   "admin.panel_badge": "Control panel",
   "admin.title": "Catalog Administration",
   "admin.back_to_lobby": "Back to Lobby",
@@ -350,5 +324,12 @@
   "admin.error_load": "Error loading catalog data",
   "admin.error_save": "Error saving component data",
   "admin.error_no_selection": "No component selected",
-  "admin.error_no_insert_data": "No data received after insertion"
+  "admin.error_no_insert_data": "No data received after insertion",
+  "config.budget_of": "of",
+  "config.budget_noun": "budget",
+  "wizard.step_project_desc": "Client & contact",
+  "wizard.step_product_desc": "Format · size · weight",
+  "wizard.step_pallet_desc": "Dimensions · budget",
+  "wizard.step_reco_desc": "Palletizer selection",
+  "specs.max_weight": "Max weight"
 }

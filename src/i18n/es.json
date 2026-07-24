@@ -36,21 +36,17 @@
   "wizard.base_transport_type_desc": "Define si la línea operará con rodillos o cadenas. Se filtrarán los transportadores de acuerdo a esta elección.",
   "wizard.init_builder_btn": "Inicializar Constructor 3D",
   "wizard.over_budget": "Sobre presupuesto",
-
   "product_type.caja": "Caja",
   "product_type.bolsa": "Bolsa",
   "product_type.caja_desc": "Caja (Cajas de cartón, bandejas)",
   "product_type.bolsa_desc": "Bolsa / Saco (Alpiste, papas, cebollas)",
-
   "wrap_type.red_desc": "Funda Elástica / Red (Stretch Hood)",
   "wrap_type.film_desc": "Film Estirable Tradicional",
-
   "transport_type.rodillo": "Rodillo",
   "transport_type.cadena": "Cadena",
   "transport_type.none": "Ninguno",
   "transport_type.rodillo_desc": "Transportadores de Rodillos (Rodillo)",
   "transport_type.cadena_desc": "Transportadores de Cadenas (Cadena)",
-
   "specs.length": "Largo",
   "specs.width": "Ancho",
   "specs.height": "Alto",
@@ -62,7 +58,6 @@
   "specs.rotation": "Rotación",
   "specs.capacity": "Capacidad",
   "specs.thickness": "Espesor",
-
   "component.palletizer": "Paletizadora",
   "component.conveyor": "Transportador",
   "component.infeed": "Alimentador",
@@ -77,12 +72,10 @@
   "component.safety": "Seguridad",
   "component.platform": "Plataforma",
   "component.support_frame": "Estructura de Soporte",
-
   "location.pallet_infeed": "Entrada de Pallets",
   "location.pallet_outfeed": "Salida de Pallets",
   "location.product_infeed": "Entrada de Producto",
   "location.others": "Otros",
-
   "sidebar.configuring": "Configurando",
   "sidebar.configurator": "Configurador",
   "sidebar.tab_pallet_in": "Pallet In",
@@ -95,7 +88,6 @@
   "sidebar.replace_btn": "Reemplazar",
   "sidebar.add_btn": "Agregar",
   "sidebar.replacing_hint": "Reemplazando: {{name}}",
-
   "topbar.lobby_panel": "Panel",
   "topbar.wizard_params": "Parámetros",
   "topbar.line": "Línea:",
@@ -115,7 +107,6 @@
   "topbar.readonly_badge": "Vista Compartida (Solo Lectura)",
   "topbar.share_btn": "Compartir",
   "topbar.new_line_default": "Línea de Paletizado {{n}}",
-
   "project.client": "Cliente",
   "project.unspecified": "Sin especificar",
   "project.remove_favorite": "Quitar de Favoritos",
@@ -123,7 +114,6 @@
   "project.estimated_price": "Precio Estimado",
   "project.delete_title": "Eliminar Proyecto",
   "project.load_btn": "Cargar",
-
   "lobby.title": "Panel de Proyectos Guardados",
   "lobby.active_user": "Usuario Activo:",
   "lobby.anonymous": "Anónimo / Vista Pública",
@@ -147,10 +137,8 @@
   "lobby.filter_status_all": "Todos los estados",
   "lobby.page_prev": "Página anterior",
   "lobby.page_next": "Página siguiente",
-
   "role.admin": "Admin",
   "role.seller": "Vendedor",
-
   "login.title_form": "Iniciar Sesión",
   "login.email_label": "Correo Electrónico",
   "login.email_placeholder": "ejemplo@correo.com",
@@ -158,7 +146,6 @@
   "login.password_placeholder": "••••••••",
   "login.submit_btn": "Ingresar",
   "login.failed_error": "Correo o contraseña inválidos",
-
   "config.coupling": "Acople",
   "config.variant": "Variante",
   "config.brake": "Freno",
@@ -187,10 +174,8 @@
   "config.rules_validations": "Reglas y Validaciones",
   "config.all_compatible": "✅ Todos los parámetros y acoplamientos son compatibles.",
   "config.select_component_hint": "Selecciona un componente de la escena 3D para ajustar su posición, rotación o accesorios opcionales.",
-
   "yes": "Sí",
   "no": "No",
-
   "warning.no_palletizer": "Se requiere una Paletizadora V-STACK en la línea.",
   "warning.mainframe_conflict": "Conflicto: El MainFrame ya incluye un Sheet Dispenser integrado. Elimina el SheetDispenser externo.",
   "warning.tube_manipulator_limit": "El peso del producto ({{weight}} kg) supera el límite del Tube Manipulator (25 kg).",
@@ -200,7 +185,6 @@
   "warning.pallet_width_conveyor_limit": "El ancho del pallet ({{value}} mm) supera la capacidad del transportador {{name}} ({{max}} mm).",
   "warning.pallet_height_wrapper_limit": "La altura total de envoltura ({{value}} mm) supera el límite del envolvedor {{name}} ({{max}} mm).",
   "warning.budget_exceeded": "El costo total (€{{cost}}) supera el presupuesto del cliente (€{{budget}}).",
-
   "toast.save_success": "Cotización guardada correctamente.",
   "toast.save_error": "Error al guardar la cotización. Inténtalo de nuevo.",
   "toast.share_copied": "Enlace para compartir copiado al portapapeles.",
@@ -212,7 +196,6 @@
   "toast.share_revoked": "Enlace de compartir revocado.",
   "toast.share_error": "No se pudo actualizar el enlace de compartir.",
   "toast.pdf_error": "No se pudo generar el PDF.",
-
   "share.title": "Compartir proyecto",
   "share.link_label": "Enlace de solo lectura",
   "share.copy_btn": "Copiar enlace",
@@ -221,7 +204,6 @@
   "share.revoke_confirm_title": "Revocar enlace",
   "share.revoke_confirm": "¿Revocar el enlace de compartir? El enlace actual dejará de funcionar para quienes lo tengan.",
   "share.no_token": "No hay un enlace activo. Genera uno nuevo para compartir el proyecto.",
-
   "modal.confirm_delete_project": "¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.",
   "modal.confirm_delete_line": "¿Estás seguro de que deseas eliminar esta línea y todos sus componentes?",
   "modal.add_line_title": "Agregar nueva línea",
@@ -230,14 +212,12 @@
   "modal.cancel": "Cancelar",
   "modal.accept": "Aceptar",
   "modal.delete": "Eliminar",
-
   "editor.undo": "Deshacer",
   "editor.redo": "Rehacer",
   "editor.fit_camera": "Centrar cámara",
   "editor.move_xz": "Mover XZ",
   "editor.rotate_y": "Rotar Y",
   "editor.delete_shortcut_hint": "Pulsa Supr para eliminar el módulo seleccionado",
-
   "pdf.quote_title": "Cotización de Línea de Paletizado",
   "pdf.client_details": "Datos del Cliente",
   "pdf.params_title": "Parámetros del Proyecto",
@@ -266,9 +246,7 @@
   "pdf.param_load_height": "Altura de Carga (mm)",
   "pdf.param_wrap": "Envoltura",
   "pdf.na": "N/D",
-
   "export.csv_btn": "Exportar CSV",
-
   "csv.header_line": "Línea",
   "csv.header_module": "Módulo",
   "csv.header_code": "Código ERP",
@@ -278,7 +256,6 @@
   "csv.header_base_price": "Precio base",
   "csv.header_options_price": "Precio opciones",
   "csv.header_subtotal": "Subtotal",
-
   "versions.title": "Historial de Versiones",
   "versions.restore_btn": "Restaurar",
   "versions.empty": "No hay versiones guardadas.",
@@ -286,17 +263,14 @@
   "versions.version_label": "Versión {{version}}",
   "versions.confirm_restore_title": "Restaurar versión",
   "versions.confirm_restore": "¿Restaurar la versión {{version}}? La escena actual será reemplazada.",
-
   "autosave.restored_hint": "Se restauró un borrador guardado automáticamente.",
   "autosave.discard": "Descartar borrador",
   "autosave.banner": "Tienes un borrador sin guardar del {{date}}",
   "autosave.continue": "Continuar",
-
   "share.loading": "Cargando proyecto compartido...",
   "share.error_title": "No se pudo cargar el proyecto compartido",
   "share.error_desc": "El enlace es inválido o ha expirado.",
   "share.go_projects": "Ir a Proyectos",
-
   "admin.panel_badge": "Panel de control",
   "admin.title": "Administración de Catálogo",
   "admin.back_to_lobby": "Volver al Lobby",
@@ -350,5 +324,12 @@
   "admin.error_load": "Error al cargar los datos del catálogo",
   "admin.error_save": "Error al guardar los datos del componente",
   "admin.error_no_selection": "No hay componente seleccionado",
-  "admin.error_no_insert_data": "No se recibieron datos tras la inserción"
+  "admin.error_no_insert_data": "No se recibieron datos tras la inserción",
+  "config.budget_of": "de",
+  "config.budget_noun": "presupuesto",
+  "wizard.step_project_desc": "Cliente y contacto",
+  "wizard.step_product_desc": "Formato · medidas · peso",
+  "wizard.step_pallet_desc": "Dimensiones · presupuesto",
+  "wizard.step_reco_desc": "Selección de paletizadora",
+  "specs.max_weight": "Peso máx"
 }

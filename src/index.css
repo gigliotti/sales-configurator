@@ -347,6 +347,238 @@ body {
   }
 }
 
+/* ============================================================
+   CAPA DE LAYOUT DEL MOCKUP (.sc-*)  ·  "densidad panel de control"
+   Estados hover/selección/pseudo que no se pueden hacer inline.
+   Todo mapeado a los tokens del tema (funciona en claro y oscuro).
+   Jerarquía de superficies: base = bg-secondary · elevado = bg-tertiary ·
+   hundido = bg-primary. Datos técnicos en fuente mono con cifras tabulares.
+   ============================================================ */
+
+/* — etiquetas y datos — */
+.sc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: hsl(var(--text-muted));
+}
+.sc-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.sc-divider { height: 1px; background: hsl(var(--border-color)); border: 0; }
+
+/* — buscador y chips de filtro — */
+.sc-search {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: hsl(var(--bg-tertiary));
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: hsl(var(--text-secondary));
+}
+.sc-search input {
+  border: 0;
+  background: transparent;
+  color: hsl(var(--text-primary));
+  font-family: var(--font-sans);
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+}
+.sc-chipf {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: hsl(var(--text-secondary));
+  border: 1px solid hsl(var(--border-color));
+  background: hsl(var(--bg-tertiary));
+  border-radius: 6px;
+  padding: 8px 11px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.sc-chipf[aria-pressed="true"] {
+  color: hsl(var(--text-primary));
+  border-color: hsl(var(--border-strong));
+  background: hsl(var(--bg-primary));
+}
+
+/* — pill de estado — */
+.sc-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.sc-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* — tarjeta de proyecto (barra de acento en hover) — */
+.sc-card {
+  background: hsl(var(--bg-tertiary));
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.14s, border-color 0.14s, box-shadow 0.14s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.sc-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: transparent;
+  transition: background 0.14s;
+}
+.sc-card:hover {
+  transform: translateY(-3px);
+  border-color: hsl(var(--border-strong));
+  box-shadow: var(--shadow-card);
+}
+.sc-card:hover::after { background: linear-gradient(90deg, hsl(var(--brand-primary)), transparent); }
+.sc-card:focus-visible { outline: 2px solid hsl(var(--brand-primary)); outline-offset: 2px; }
+
+/* — stepper del asistente — */
+.sc-step {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  padding: 12px 10px;
+  border-radius: 6px;
+  color: hsl(var(--text-secondary));
+}
+.sc-step .n {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--border-strong));
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: hsl(var(--bg-tertiary));
+}
+.sc-step .lb { font-size: 13px; font-weight: 600; color: hsl(var(--text-primary)); }
+.sc-step .ds { font-size: 11px; color: hsl(var(--text-muted)); margin-top: 2px; }
+.sc-step.done .n { background: hsl(var(--state-success)); border-color: hsl(var(--state-success)); color: #fff; }
+.sc-step.active { background: hsl(var(--bg-primary)); }
+.sc-step.active .n {
+  background: hsl(var(--brand-primary));
+  border-color: hsl(var(--brand-primary));
+  color: hsl(var(--on-accent));
+  box-shadow: 0 0 0 4px hsl(var(--brand-primary) / 0.22);
+}
+
+/* — tarjeta de recomendación (paletizadora) — */
+.sc-reco {
+  border: 1px solid hsl(var(--border-color));
+  background: hsl(var(--bg-primary));
+  border-radius: 9px;
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  transition: border-color 0.14s, transform 0.14s;
+}
+.sc-reco:hover { transform: translateY(-2px); border-color: hsl(var(--border-strong)); }
+.sc-reco.sel { border-color: hsl(var(--brand-primary)); box-shadow: inset 0 0 0 1px hsl(var(--brand-primary)); }
+.sc-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: hsl(var(--text-muted));
+  border: 1px solid hsl(var(--border-color));
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* — tarjeta de módulo (barra lateral del editor) — */
+.sc-mod {
+  border: 1px solid hsl(var(--border-color));
+  background: hsl(var(--bg-tertiary));
+  border-radius: 7px;
+  padding: 11px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.12s, transform 0.12s;
+}
+.sc-mod:hover { transform: translateY(-1px); border-color: hsl(var(--border-strong)); }
+.sc-mod.sel { border-color: hsl(var(--brand-primary)); box-shadow: inset 0 0 0 1px hsl(var(--brand-primary)); }
+
+/* — pestañas de ubicación — */
+.sc-loc-tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid hsl(var(--border-color)); }
+.sc-loc-tabs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--text-muted));
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 10px 4px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: var(--transition-fast);
+}
+.sc-loc-tabs button.on { color: hsl(var(--text-primary)); border-bottom-color: hsl(var(--brand-primary)); background: hsl(var(--bg-primary)); }
+
+/* — medidor de presupuesto — */
+.sc-meter {
+  height: 6px;
+  border-radius: 4px;
+  background: hsl(var(--bg-primary));
+  border: 1px solid hsl(var(--border-color));
+  overflow: hidden;
+}
+.sc-meter i { display: block; height: 100%; background: linear-gradient(90deg, hsl(var(--state-success)), hsl(var(--brand-secondary))); }
+.sc-meter.warn i { background: linear-gradient(90deg, hsl(var(--state-warning)), hsl(var(--state-error))); }
+
+/* — caja de precio total — */
+.sc-total {
+  background: linear-gradient(180deg, hsl(var(--bg-tertiary)), hsl(var(--brand-primary) / 0.06));
+  border: 1px solid hsl(var(--border-color));
+  border-radius: 9px;
+  padding: 15px;
+}
+
+/* — alertas de validación con franja de severidad — */
+.sc-alert {
+  display: flex;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+.sc-alert .b { width: 3px; border-radius: 3px; flex: none; align-self: stretch; }
+.sc-alert.ok   { background: hsl(var(--state-success) / 0.1);  border-color: hsl(var(--state-success) / 0.28); color: hsl(var(--state-success)); }
+.sc-alert.ok .b   { background: hsl(var(--state-success)); }
+.sc-alert.warn { background: hsl(var(--state-warning) / 0.1);  border-color: hsl(var(--state-warning) / 0.3);  color: hsl(var(--state-warning)); }
+.sc-alert.warn .b { background: hsl(var(--state-warning)); }
+.sc-alert.err  { background: hsl(var(--state-error) / 0.1);    border-color: hsl(var(--state-error) / 0.3);    color: hsl(var(--state-error)); }
+.sc-alert.err .b  { background: hsl(var(--state-error)); }
+
 /* Custom Scrollbar for Catalog List Sidebar */
 .catalog-list::-webkit-scrollbar {
   width: 8px;
