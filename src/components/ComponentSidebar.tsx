@@ -148,7 +148,7 @@ export const ComponentSidebar: React.FC = () => {
         backgroundColor: 'hsl(var(--bg-secondary))',
       }}
     >
-      {/* Sidebar Header with Meta info */}
+      {/* Bar header (colhead) */}
       <div
         style={{
           padding: '16px 20px',
@@ -156,10 +156,10 @@ export const ComponentSidebar: React.FC = () => {
           backgroundColor: 'var(--overlay-soft)',
         }}
       >
-        <span style={{ fontSize: '11px', color: 'hsl(var(--brand-primary))', fontWeight: 600, textTransform: 'uppercase' }}>
-          {t('sidebar.configuring', 'Configurando')}
+        <span className="sc-eyebrow">
+          {t('sidebar.configuring', 'Configurando')} · {getLocationName(activeLocationTab)}
         </span>
-        <h2 style={{ fontSize: '18px', fontWeight: 600, marginTop: '2px', wordBreak: 'break-all' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, marginTop: '6px', wordBreak: 'break-all' }}>
           {placedPalletizer ? placedPalletizer.name : t('sidebar.configurator', 'Configurador')}
         </h2>
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '12px', color: 'hsl(var(--text-secondary))' }}>
@@ -169,16 +169,11 @@ export const ComponentSidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Location Tabs */}
+      {/* Location tabs */}
       <div
+        className="sc-loc-tabs"
         role="tablist"
         aria-label={t('config.location_3d', 'Ubicación en escena 3D')}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          backgroundColor: 'var(--overlay-soft)',
-          borderBottom: '1px solid hsl(var(--border-color))',
-        }}
       >
         {[0, 1, 2, 3].map((id) => {
           const isActive = activeLocationTab === id;
@@ -188,18 +183,8 @@ export const ComponentSidebar: React.FC = () => {
               role="tab"
               aria-selected={isActive}
               aria-label={getLocationName(id)}
+              className={isActive ? 'on' : undefined}
               onClick={() => setActiveLocationTab(id)}
-              style={{
-                padding: '12px 2px',
-                background: isActive ? 'hsl(var(--bg-tertiary))' : 'transparent',
-                border: 'none',
-                borderBottom: isActive ? '2px solid hsl(var(--brand-primary))' : '2px solid transparent',
-                color: isActive ? 'hsl(var(--text-primary))' : 'hsl(var(--text-muted))',
-                fontSize: '10px',
-                fontWeight: isActive ? 600 : 400,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
             >
               {id === 0
                 ? t('sidebar.tab_pallet_in', 'Pallet In')
@@ -213,24 +198,32 @@ export const ComponentSidebar: React.FC = () => {
         })}
       </div>
 
-      {/* Search Input */}
-      <div
-        style={{
-          padding: '12px 20px 0',
-        }}
-      >
-        <input
-          type="text"
-          className="form-input"
-          placeholder={t('sidebar.search_placeholder', 'Buscar módulo...')}
-          aria-label={t('sidebar.search_placeholder', 'Buscar módulo...')}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%',
-            fontSize: '13px',
-          }}
-        />
+      {/* Search */}
+      <div style={{ padding: '12px 20px 0' }}>
+        <div className="sc-search">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            style={{ flex: 'none' }}
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            placeholder={t('sidebar.search_placeholder', 'Buscar módulo...')}
+            aria-label={t('sidebar.search_placeholder', 'Buscar módulo...')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Replacement mode banner */}
@@ -286,10 +279,6 @@ export const ComponentSidebar: React.FC = () => {
           gap: '12px',
         }}
       >
-        <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          {t('sidebar.modules_of', 'Módulos de')} {getLocationName(activeLocationTab)}
-        </h3>
-
         {filteredCatalog.length === 0 ? (
           <div
             style={{
@@ -306,29 +295,13 @@ export const ComponentSidebar: React.FC = () => {
           </div>
         ) : (
           filteredCatalog.map((comp) => (
-            <div
-              key={comp.id}
-              className="pulse-glow-hover"
-              style={{
-                padding: '14px',
-                borderRadius: '8px',
-                backgroundColor: 'hsl(var(--bg-tertiary))',
-                border: '1px solid hsl(var(--border-color))',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                transition: 'all 0.2s',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ fontWeight: 600, fontSize: '14px', paddingRight: '8px' }}>
+            <div key={comp.id} className="sc-mod">
+              {/* mt: nombre + código */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                <b style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>
                   {comp.component_type_name ? t(`component.${comp.component_type_name}`, comp.name) : comp.name}
-                </div>
-                {comp.code && (
-                  <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--fill-faint)', color: 'hsl(var(--text-muted))' }}>
-                    {comp.code}
-                  </span>
-                )}
+                </b>
+                {comp.code && <span className="sc-code">{comp.code}</span>}
               </div>
 
               {/* Specs descriptions */}
@@ -350,17 +323,11 @@ export const ComponentSidebar: React.FC = () => {
                 )}
               </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: '4px',
-                }}
-              >
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--brand-primary))' }}>
+              {/* mb: precio + acción */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="sc-mono" style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--brand-primary))' }}>
                   {formatEUR(comp.price_eur, language)}
-                </div>
+                </span>
                 {replacingComponentUuid ? (
                   <button
                     className="btn-primary"

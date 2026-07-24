@@ -256,36 +256,25 @@ export const Lobby: React.FC = () => {
           </div>
         )}
 
-        {/* Lobby Header */}
+        {/* Barra superior de cuenta (persistente: marca + tema/idioma + cuenta) */}
         <div
           style={{
-            padding: '24px 32px',
+            padding: '14px 28px',
             borderBottom: '1px solid hsl(var(--border-color))',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: '16px',
+            flexWrap: 'wrap',
             backgroundColor: 'var(--overlay-soft)',
           }}
         >
-          <div>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                color: 'hsl(var(--brand-primary))',
-                textTransform: 'uppercase',
-                letterSpacing: '2px',
-              }}
-            >
-              Verbruggen Assembly configurator
-            </span>
-            <h1 className="title-gradient" style={{ fontSize: '26px', marginTop: '4px', fontWeight: 700 }}>
-              {t('lobby.title', 'Panel de Proyectos Guardados')}
-            </h1>
+          <div className="sc-eyebrow" style={{ color: 'hsl(var(--brand-primary))' }}>
+            Verbruggen Assembly configurator
           </div>
 
-          {/* Theme + Language Switchers */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Theme + Language Switchers + cuenta */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <ThemeToggle />
             <span style={{ fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
               {language === 'es' ? 'Idioma:' : 'Language:'}
@@ -305,132 +294,152 @@ export const Lobby: React.FC = () => {
               <option value="es">Español</option>
               <option value="en">English</option>
             </select>
+            {activeProfile?.role === 'admin' && (
+              <button
+                className="btn-secondary"
+                onClick={() => navigate('/admin')}
+                style={{ padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 600 }}
+              >
+                {t('lobby.catalog_admin_btn', 'Administrar Catálogo')}
+              </button>
+            )}
+            {activeProfile && (
+              <button
+                className="btn-secondary"
+                onClick={logout}
+                style={{ padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 600 }}
+              >
+                {t('lobby.sign_out_btn', 'Cerrar Sesión')}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Lobby Control Bar (Search, Tabs, and Create Button) */}
+        {/* Cabecera de la vista: eyebrow + título + acción principal */}
         {activeProfile && (
           <div
             style={{
-              padding: '20px 32px',
+              padding: '22px 28px 18px',
               borderBottom: '1px solid hsl(var(--border-color))',
-              backgroundColor: 'var(--overlay-soft)',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-end',
               gap: '20px',
               flexWrap: 'wrap',
             }}
           >
-            {/* Tab buttons */}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {activeProfile.role !== 'client' && (
-                <button
-                  className={resolvedTab === 'mine' ? 'btn-primary' : 'btn-secondary'}
-                  style={{ padding: '8px 16px', borderRadius: '20px', fontSize: '13px' }}
-                  onClick={() => setActiveTab('mine')}
-                >
-                  📁 {t('lobby.tab_mine', 'Mis Proyectos')}
-                </button>
-              )}
-              <button
-                className={resolvedTab === 'others' ? 'btn-primary' : 'btn-secondary'}
-                style={{ padding: '8px 16px', borderRadius: '20px', fontSize: '13px' }}
-                onClick={() => setActiveTab('others')}
+            <div style={{ minWidth: 0 }}>
+              <div className="sc-eyebrow">{language === 'es' ? 'Panel de proyectos' : 'Projects panel'}</div>
+              <h1
+                className="title-gradient"
+                style={{ fontSize: '26px', marginTop: '6px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.15 }}
               >
-                🔍 {t('lobby.tab_others', 'Otros Proyectos')}
-              </button>
-              {activeProfile.role !== 'client' && (
-                <button
-                  className={resolvedTab === 'favorites' ? 'btn-primary' : 'btn-secondary'}
-                  style={{ padding: '8px 16px', borderRadius: '20px', fontSize: '13px' }}
-                  onClick={() => setActiveTab('favorites')}
-                >
-                  ⭐ {t('lobby.tab_favorites', 'Favoritos')} ({favoriteProjectIds.length})
-                </button>
-              )}
+                {t('lobby.title', 'Panel de Proyectos Guardados')}
+              </h1>
+              <p style={{ fontSize: '13px', color: 'hsl(var(--text-secondary))', marginTop: '5px' }}>
+                {language === 'es'
+                  ? 'Gestioná, filtrá y continuá tus cotizaciones guardadas.'
+                  : 'Manage, filter and resume your saved quotes.'}
+              </p>
+            </div>
+            <button
+              className="btn-primary"
+              onClick={handleCreateNew}
+              style={{
+                padding: '10px 18px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              {t('lobby.new_quote_btn', 'Nueva Cotización')}
+            </button>
+          </div>
+        )}
+
+        {/* Toolbar: búsqueda, filtros de estado y pestañas de propiedad */}
+        {activeProfile && (
+          <div
+            style={{
+              padding: '16px 28px',
+              borderBottom: '1px solid hsl(var(--border-color))',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <label className="sc-search" style={{ flex: '1 1 240px', maxWidth: '360px' }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder={t('lobby.search_placeholder', 'Buscar por proyecto, cliente o correo...')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+                {([
+                  ['all', t('lobby.filter_status_all', 'Todos los estados')],
+                  ['draft', t('lobby.status_draft', 'Borrador')],
+                  ['sent', t('lobby.status_sent', 'Enviada')],
+                  ['approved', t('lobby.status_approved', 'Aprobada')],
+                  ['rejected', t('lobby.status_rejected', 'Rechazada')],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className="sc-chipf"
+                    aria-pressed={statusFilter === value}
+                    onClick={() => setStatusFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Search Input, Status Filter, New Button & Sign Out Button */}
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1, justifyContent: 'flex-end', maxWidth: '760px', flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                placeholder={t('lobby.search_placeholder', 'Buscar por proyecto, cliente o correo...')}
-                className="form-input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  maxWidth: '240px',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  borderRadius: '6px',
-                }}
-              />
-              <select
-                className="form-input"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectStatus)}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  borderRadius: '6px',
-                  backgroundColor: 'hsl(var(--bg-tertiary))',
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="all">{t('lobby.filter_status_all', 'Todos los estados')}</option>
-                <option value="draft">{t('lobby.status_draft', 'Borrador')}</option>
-                <option value="sent">{t('lobby.status_sent', 'Enviada')}</option>
-                <option value="approved">{t('lobby.status_approved', 'Aprobada')}</option>
-                <option value="rejected">{t('lobby.status_rejected', 'Rechazada')}</option>
-              </select>
-              <button
-                className="btn-primary"
-                onClick={handleCreateNew}
-                style={{
-                  padding: '9px 18px',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                ➕ {t('lobby.new_quote_btn', 'Nueva Cotización')}
-              </button>
-              {activeProfile?.role === 'admin' && (
+            {/* Pestañas de propiedad (mine/others/favorites) como chips secundarios */}
+            <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+              {activeProfile.role !== 'client' && (
                 <button
-                  className="btn-secondary"
-                  onClick={() => navigate('/admin')}
-                  style={{
-                    padding: '9px 18px',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
+                  type="button"
+                  className="sc-chipf"
+                  aria-pressed={resolvedTab === 'mine'}
+                  onClick={() => setActiveTab('mine')}
                 >
-                  🛠️ {t('lobby.catalog_admin_btn', 'Administrar Catálogo')}
+                  {t('lobby.tab_mine', 'Mis Proyectos')}
                 </button>
               )}
               <button
-                className="btn-secondary"
-                onClick={logout}
-                style={{
-                  padding: '9px 18px',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
+                type="button"
+                className="sc-chipf"
+                aria-pressed={resolvedTab === 'others'}
+                onClick={() => setActiveTab('others')}
               >
-                🚪 {t('lobby.sign_out_btn', 'Cerrar Sesión')}
+                {t('lobby.tab_others', 'Otros Proyectos')}
               </button>
+              {activeProfile.role !== 'client' && (
+                <button
+                  type="button"
+                  className="sc-chipf"
+                  aria-pressed={resolvedTab === 'favorites'}
+                  onClick={() => setActiveTab('favorites')}
+                >
+                  {t('lobby.tab_favorites', 'Favoritos')} ({favoriteProjectIds.length})
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -524,8 +533,8 @@ export const Lobby: React.FC = () => {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                  gap: '20px',
+                  gap: '14px',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(258px, 1fr))',
                 }}
               >
                 {pageProjects.map((p) => {
@@ -536,154 +545,155 @@ export const Lobby: React.FC = () => {
                   const showFavorite = activeProfile && !isOwner; // Can favorite others' projects
                   const status = normalizeStatus(p.status);
                   const statusStyle = STATUS_COLORS[status];
+                  const updatedLabel = p.updated_at
+                    ? new Date(p.updated_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : '';
 
                   return (
-                    <div
+                    <article
                       key={p.id}
+                      className="sc-card"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={p.name}
                       onClick={() => handleSelectProject(p.id)}
-                      className="glass-panel"
-                      style={{
-                        padding: '20px',
-                        borderRadius: '10px',
-                        border: '1px solid hsl(var(--border-color))',
-                        backgroundColor: 'hsl(var(--bg-tertiary))',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        minHeight: '180px',
-                        position: 'relative',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'hsl(var(--brand-primary) / 0.5)';
-                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'hsl(var(--border-color))';
-                        e.currentTarget.style.boxShadow = 'none';
-                        e.currentTarget.style.transform = 'none';
+                      onKeyDown={(e) => {
+                        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          handleSelectProject(p.id);
+                        }
                       }}
                     >
-                      {/* Project Top Section */}
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                          <h3
-                            style={{
-                              fontSize: '17px',
-                              fontWeight: 600,
-                              lineHeight: 1.3,
-                              color: 'hsl(var(--text-primary))',
-                              maxWidth: '80%',
-                            }}
-                          >
-                            {p.name}
-                          </h3>
-
-                          {/* Favorites Star Indicator / Toggle */}
-                          {showFavorite && (
-                            <button
-                              onClick={(e) => handleFavoriteToggle(e, p.id)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                fontSize: '18px',
-                                cursor: 'pointer',
-                                padding: 0,
-                                color: isFavorite ? 'hsl(45, 100%, 50%)' : 'hsl(var(--text-muted))',
-                                transition: 'transform 0.1s',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
-                              title={isFavorite ? t('project.remove_favorite', 'Quitar de Favoritos') : t('project.add_favorite', 'Marcar como Favorito')}
-                            >
-                              {isFavorite ? '★' : '☆'}
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Status Badge */}
-                        <span
+                      {/* Estrella de favorito (arriba-derecha) */}
+                      {showFavorite && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleFavoriteToggle(e, p.id)}
+                          aria-pressed={isFavorite}
+                          title={isFavorite ? t('project.remove_favorite', 'Quitar de Favoritos') : t('project.add_favorite', 'Marcar como Favorito')}
+                          aria-label={isFavorite ? t('project.remove_favorite', 'Quitar de Favoritos') : t('project.add_favorite', 'Marcar como Favorito')}
                           style={{
-                            display: 'inline-block',
-                            marginTop: '8px',
-                            padding: '3px 10px',
-                            borderRadius: '999px',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            backgroundColor: statusStyle.bg,
-                            color: statusStyle.fg,
-                            border: `1px solid ${statusStyle.border}`,
+                            position: 'absolute',
+                            top: '11px',
+                            right: '12px',
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '17px',
+                            lineHeight: 1,
+                            cursor: 'pointer',
+                            padding: 0,
+                            color: isFavorite ? 'hsl(45, 100%, 50%)' : 'hsl(var(--text-muted))',
                           }}
                         >
-                          {t(`lobby.status_${status}`, status)}
-                        </span>
+                          {isFavorite ? '★' : '☆'}
+                        </button>
+                      )}
 
-                        {/* Client info */}
-                        <div style={{ fontSize: '13px', color: 'hsl(var(--text-muted))', marginTop: '8px' }}>
-                          <div>👤 {t('project.client', 'Cliente')}: {p.client_name || t('project.unspecified', 'Sin especificar')}</div>
-                          {p.client_email && <div style={{ fontSize: '12px' }}>✉️ {p.client_email}</div>}
+                      {/* Encabezado: nombre + cliente */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <h3
+                          style={{
+                            fontSize: '15.5px',
+                            fontWeight: 700,
+                            letterSpacing: '-0.01em',
+                            lineHeight: 1.3,
+                            color: 'hsl(var(--text-primary))',
+                            paddingRight: showFavorite ? '26px' : 0,
+                          }}
+                        >
+                          {p.name}
+                        </h3>
+                        <div
+                          title={p.client_email || undefined}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'hsl(var(--text-secondary))', minWidth: 0 }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                            <path d="m3 7 9 6 9-6" />
+                          </svg>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {t('project.client', 'Cliente')}: {p.client_name || t('project.unspecified', 'Sin especificar')}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Project Bottom Section */}
-                      <div style={{ marginTop: '20px', borderTop: '1px solid hsl(var(--border-color))', paddingTop: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontSize: '11px', color: 'hsl(var(--text-muted))', textTransform: 'uppercase' }}>
-                              {t('project.estimated_price', 'Precio Estimado')}
-                            </div>
-                            <div style={{ fontSize: '16px', fontWeight: 700, color: 'hsl(var(--brand-secondary))', marginTop: '2px' }}>
-                              {formatEUR(toNumber(p.total_price_eur), language)}
-                            </div>
+                      {/* Pie: precio + estado · acciones + meta */}
+                      <div
+                        style={{
+                          marginTop: 'auto',
+                          paddingTop: '13px',
+                          borderTop: '1px solid hsl(var(--border-color))',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+                          <div className="sc-mono" style={{ fontSize: '19px', fontWeight: 600, color: 'hsl(var(--text-primary))', lineHeight: 1 }}>
+                            {formatEUR(toNumber(p.total_price_eur), language)}
                           </div>
+                          <span
+                            className="sc-pill"
+                            style={{ backgroundColor: statusStyle.bg, color: statusStyle.fg, borderColor: statusStyle.border }}
+                          >
+                            {t(`lobby.status_${status}`, status)}
+                          </span>
+                        </div>
 
-                          {/* Actions */}
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            {showDelete && (
-                              <button
-                                onClick={(e) => handleDelete(e, p.id)}
-                                style={{
-                                  background: 'hsl(var(--state-error) / 0.1)',
-                                  border: '1px solid hsl(var(--state-error))',
-                                  color: 'hsl(var(--state-error))',
-                                  padding: '6px 10px',
-                                  borderRadius: '4px',
-                                  fontSize: '12px',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'hsl(var(--state-error))';
-                                  e.currentTarget.style.color = '#fff';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'hsl(var(--state-error) / 0.1)';
-                                  e.currentTarget.style.color = 'hsl(var(--state-error))';
-                                }}
-                                title={t('project.delete_title', 'Eliminar Proyecto')}
-                              >
-                                🗑️
-                              </button>
-                            )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+                          {showDelete && (
                             <button
-                              className="btn-primary"
+                              type="button"
+                              onClick={(e) => handleDelete(e, p.id)}
+                              title={t('project.delete_title', 'Eliminar Proyecto')}
+                              aria-label={t('project.delete_title', 'Eliminar Proyecto')}
                               style={{
-                                padding: '6px 12px',
-                                borderRadius: '4px',
-                                fontSize: '12px',
-                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '28px',
+                                height: '28px',
+                                padding: 0,
+                                background: 'transparent',
+                                border: '1px solid hsl(var(--border-color))',
+                                borderRadius: '6px',
+                                color: 'hsl(var(--text-muted))',
+                                cursor: 'pointer',
+                                transition: 'var(--transition-fast)',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = 'hsl(var(--state-error))';
+                                e.currentTarget.style.borderColor = 'hsl(var(--state-error))';
+                                e.currentTarget.style.backgroundColor = 'hsl(var(--state-error) / 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = 'hsl(var(--text-muted))';
+                                e.currentTarget.style.borderColor = 'hsl(var(--border-color))';
+                                e.currentTarget.style.backgroundColor = 'transparent';
                               }}
                             >
-                              {t('project.load_btn', 'Cargar')} ➡️
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                              </svg>
                             </button>
-                          </div>
+                          )}
+                          {updatedLabel && (
+                            <span className="sc-mono" style={{ fontSize: '10.5px', color: 'hsl(var(--text-muted))', whiteSpace: 'nowrap' }}>
+                              {updatedLabel}
+                            </span>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    </article>
                   );
                 })}
               </div>
