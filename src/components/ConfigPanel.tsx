@@ -207,7 +207,7 @@ export const ConfigPanel: React.FC = () => {
                       padding: '8px 12px',
                       borderRadius: '6px',
                       border: '1px dashed hsl(var(--brand-primary))',
-                      backgroundColor: 'rgba(242, 139, 5, 0.05)',
+                      backgroundColor: 'hsl(var(--brand-primary) / 0.05)',
                       color: 'hsl(var(--brand-primary))',
                       fontSize: '12px',
                       fontWeight: 500,
@@ -227,7 +227,7 @@ export const ConfigPanel: React.FC = () => {
                       borderRadius: '6px',
                       borderColor: 'hsl(var(--brand-primary))',
                       color: 'hsl(var(--brand-primary))',
-                      background: 'rgba(242, 139, 5, 0.02)',
+                      background: 'hsl(var(--brand-primary) / 0.02)',
                       fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -346,7 +346,7 @@ export const ConfigPanel: React.FC = () => {
                         justifyContent: 'space-between',
                         padding: '10px 12px',
                         borderRadius: '6px',
-                        backgroundColor: isChecked ? 'rgba(255,255,255,0.03)' : 'transparent',
+                        backgroundColor: isChecked ? 'var(--fill-faint)' : 'transparent',
                         border: '1px solid hsl(var(--border-color))',
                         fontSize: '13px',
                         cursor: isReadOnly ? 'not-allowed' : 'pointer',
@@ -379,7 +379,7 @@ export const ConfigPanel: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'hsl(var(--text-secondary))' }}>{t('config.module_cost', 'Costo del Módulo')}</span>
-              <span style={{ fontSize: '18px', fontWeight: 600, color: '#fff' }}>
+              <span style={{ fontSize: '18px', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
                 {formatEUR(selectedComp.totalPrice, language)}
               </span>
             </div>
@@ -393,8 +393,8 @@ export const ConfigPanel: React.FC = () => {
                   padding: '8px 0',
                   borderRadius: '6px',
                   color: 'hsl(var(--state-error))',
-                  borderColor: 'rgba(231, 76, 60, 0.2)',
-                  backgroundColor: 'rgba(231, 76, 60, 0.02)',
+                  borderColor: 'hsl(var(--state-error) / 0.2)',
+                  backgroundColor: 'hsl(var(--state-error) / 0.02)',
                   fontWeight: 600,
                   fontSize: '13px',
                 }}
@@ -419,7 +419,7 @@ export const ConfigPanel: React.FC = () => {
             style={{
               padding: '20px',
               borderRadius: '10px',
-              background: 'linear-gradient(135deg, hsl(var(--bg-tertiary)) 0%, rgba(242, 139, 5, 0.05) 100%)',
+              background: 'linear-gradient(135deg, hsl(var(--bg-tertiary)) 0%, hsl(var(--brand-primary) / 0.05) 100%)',
               border: '1px solid hsl(var(--border-color))',
               display: 'flex',
               flexDirection: 'column',
@@ -446,8 +446,8 @@ export const ConfigPanel: React.FC = () => {
                 style={{
                   padding: '16px',
                   borderRadius: '6px',
-                  backgroundColor: 'rgba(46, 204, 113, 0.05)',
-                  border: '1px solid rgba(46, 204, 113, 0.2)',
+                  backgroundColor: 'hsl(var(--state-success) / 0.05)',
+                  border: '1px solid hsl(var(--state-success) / 0.2)',
                   color: 'hsl(var(--state-success))',
                   fontSize: '13px',
                   display: 'flex',
@@ -467,8 +467,8 @@ export const ConfigPanel: React.FC = () => {
                       style={{
                         padding: '12px',
                         borderRadius: '6px',
-                        backgroundColor: isError ? 'rgba(231, 76, 60, 0.05)' : 'rgba(243, 156, 18, 0.05)',
-                        border: `1px solid ${isError ? 'rgba(231, 76, 60, 0.2)' : 'rgba(243, 156, 18, 0.2)'}`,
+                        backgroundColor: isError ? 'hsl(var(--state-error) / 0.05)' : 'hsl(var(--state-warning) / 0.05)',
+                        border: `1px solid ${isError ? 'hsl(var(--state-error) / 0.2)' : 'hsl(var(--state-warning) / 0.2)'}`,
                         color: isError ? 'hsl(var(--state-error))' : 'hsl(var(--state-warning))',
                         fontSize: '12px',
                         lineHeight: '1.4',

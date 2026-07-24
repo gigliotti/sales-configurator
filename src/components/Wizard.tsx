@@ -86,7 +86,7 @@ export const Wizard: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'radial-gradient(circle at center, #111625 0%, #080a10 100%)',
+        background: 'radial-gradient(circle at center, hsl(var(--bg-secondary)) 0%, hsl(var(--bg-primary)) 100%)',
         padding: '24px',
         overflowY: 'auto',
       }}
@@ -111,7 +111,7 @@ export const Wizard: React.FC = () => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            backgroundColor: 'rgba(0,0,0,0.2)',
+            backgroundColor: 'var(--overlay-soft)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -182,7 +182,7 @@ export const Wizard: React.FC = () => {
                 padding: '12px 16px',
                 marginBottom: '20px',
                 borderRadius: '6px',
-                backgroundColor: 'rgba(242, 139, 5, 0.15)',
+                backgroundColor: 'hsl(var(--brand-primary) / 0.15)',
                 border: '1px solid hsl(var(--brand-primary))',
                 color: 'hsl(var(--brand-primary))',
                 fontSize: '13px',
@@ -464,7 +464,7 @@ export const Wizard: React.FC = () => {
                       style={{
                         padding: '32px',
                         textAlign: 'center',
-                        backgroundColor: 'rgba(231, 76, 60, 0.05)',
+                        backgroundColor: 'hsl(var(--state-error) / 0.05)',
                         border: '1px dashed hsl(var(--state-error))',
                         borderRadius: '8px',
                       }}
@@ -535,8 +535,8 @@ export const Wizard: React.FC = () => {
                                   fontSize: '11px',
                                   padding: '2px 8px',
                                   borderRadius: '12px',
-                                  backgroundColor: 'rgba(243, 156, 18, 0.12)',
-                                  border: '1px solid rgba(243, 156, 18, 0.4)',
+                                  backgroundColor: 'hsl(var(--state-warning) / 0.12)',
+                                  border: '1px solid hsl(var(--state-warning) / 0.4)',
                                   color: 'hsl(var(--state-warning))',
                                   fontWeight: 600,
                                 }}
@@ -557,7 +557,7 @@ export const Wizard: React.FC = () => {
                       style={{
                         padding: '20px',
                         borderRadius: '8px',
-                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        backgroundColor: 'var(--fill-faint)',
                         border: '1px solid hsl(var(--border-color))',
                         display: 'flex',
                         flexDirection: 'column',

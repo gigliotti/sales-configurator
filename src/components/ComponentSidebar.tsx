@@ -153,7 +153,7 @@ export const ComponentSidebar: React.FC = () => {
         style={{
           padding: '16px 20px',
           borderBottom: '1px solid hsl(var(--border-color))',
-          backgroundColor: 'rgba(0,0,0,0.1)',
+          backgroundColor: 'var(--overlay-soft)',
         }}
       >
         <span style={{ fontSize: '11px', color: 'hsl(var(--brand-primary))', fontWeight: 600, textTransform: 'uppercase' }}>
@@ -176,7 +176,7 @@ export const ComponentSidebar: React.FC = () => {
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          backgroundColor: 'rgba(0,0,0,0.15)',
+          backgroundColor: 'var(--overlay-soft)',
           borderBottom: '1px solid hsl(var(--border-color))',
         }}
       >
@@ -241,7 +241,7 @@ export const ComponentSidebar: React.FC = () => {
             padding: '8px 12px',
             borderRadius: '6px',
             border: '1px dashed hsl(var(--brand-primary))',
-            backgroundColor: 'rgba(242, 139, 5, 0.05)',
+            backgroundColor: 'hsl(var(--brand-primary) / 0.05)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -325,7 +325,7 @@ export const ComponentSidebar: React.FC = () => {
                   {comp.component_type_name ? t(`component.${comp.component_type_name}`, comp.name) : comp.name}
                 </div>
                 {comp.code && (
-                  <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.05)', color: 'hsl(var(--text-muted))' }}>
+                  <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--fill-faint)', color: 'hsl(var(--text-muted))' }}>
                     {comp.code}
                   </span>
                 )}
