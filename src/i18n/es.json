@@ -331,5 +331,14 @@
   "wizard.step_product_desc": "Formato · medidas · peso",
   "wizard.step_pallet_desc": "Dimensiones · presupuesto",
   "wizard.step_reco_desc": "Selección de paletizadora",
-  "specs.max_weight": "Peso máx"
+  "specs.max_weight": "Peso máx",
+  "lobby.docs_btn": "Documentación",
+  "docs.title": "Documentación",
+  "docs.nav_label": "Documentos",
+  "docs.nav_readme": "Visión general",
+  "docs.nav_development": "Flujo de desarrollo",
+  "docs.nav_security": "Seguridad",
+  "docs.nav_testing": "Testing",
+  "docs.nav_catalogo": "Catálogo 3D",
+  "docs.nav_database": "Base de datos"
 }

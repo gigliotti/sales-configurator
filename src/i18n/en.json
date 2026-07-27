@@ -331,5 +331,14 @@
   "wizard.step_product_desc": "Format · size · weight",
   "wizard.step_pallet_desc": "Dimensions · budget",
   "wizard.step_reco_desc": "Palletizer selection",
-  "specs.max_weight": "Max weight"
+  "specs.max_weight": "Max weight",
+  "lobby.docs_btn": "Documentation",
+  "docs.title": "Documentation",
+  "docs.nav_label": "Documents",
+  "docs.nav_readme": "Overview",
+  "docs.nav_development": "Development workflow",
+  "docs.nav_security": "Security",
+  "docs.nav_testing": "Testing",
+  "docs.nav_catalogo": "3D Catalog",
+  "docs.nav_database": "Database"
 }
