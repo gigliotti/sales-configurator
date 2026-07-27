@@ -5,6 +5,7 @@ dist
 .env
 supabase
 database
+!database/README.md
 *.log
 public/3d/Palletizer/v-stack_745.glb
 
