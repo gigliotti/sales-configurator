@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useConfiguratorStore } from './store/useConfiguratorStore';
 import { Wizard } from './components/Wizard';
@@ -9,6 +9,11 @@ import { Viewport3D } from './components/Viewport3D';
 import { ConfigPanel } from './components/ConfigPanel';
 import { CatalogAdminPanel } from './components/CatalogAdminPanel';
 import { useAutosaveDraft } from './hooks/useAutosaveDraft';
+
+// DocsViewer arrastra react-markdown/remark-gfm (y, en cascada, mermaid): se
+// carga bajo demanda para que ese peso no viaje en el bundle principal de la
+// app, que se descarga en cada visita (Lobby, Wizard, Editor).
+const DocsViewer = React.lazy(() => import('./components/DocsViewer'));
 
 /** Layout del editor 3D (TopBar + sidebar + viewport + panel de opciones). */
 const EditorLayout: React.FC = () => {
@@ -184,6 +189,39 @@ const AdminScreen: React.FC = () => {
   return <CatalogAdminPanel />;
 };
 
+/** Ruta /docs y /docs/:slug: visor de documentación, restringido al rol admin. */
+const DocsScreen: React.FC = () => {
+  const activeProfile = useConfiguratorStore((state) => state.activeProfile);
+  const isAdmin = activeProfile?.role === 'admin';
+
+  if (!isAdmin) {
+    return <Navigate to="/projects" replace />;
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            background: 'hsl(var(--bg-primary))',
+            color: 'hsl(var(--brand-primary))',
+          }}
+        >
+          <div className="pulse-glow-hover" style={{ fontSize: '15px', fontWeight: 600 }}>
+            Cargando documentación…
+          </div>
+        </div>
+      }
+    >
+      <DocsViewer />
+    </Suspense>
+  );
+};
+
 export const App: React.FC = () => {
   const initAuthListener = useConfiguratorStore((state) => state.initAuthListener);
   const loadTranslations = useConfiguratorStore((state) => state.loadTranslations);
@@ -216,6 +254,8 @@ export const App: React.FC = () => {
       <Route path="/editor/:projectId" element={<EditorScreen />} />
       <Route path="/share/:token" element={<ShareScreen />} />
       <Route path="/admin" element={<AdminScreen />} />
+      <Route path="/docs" element={<DocsScreen />} />
+      <Route path="/docs/:slug" element={<DocsScreen />} />
       <Route path="*" element={<Navigate to="/projects" replace />} />
     </Routes>
   );

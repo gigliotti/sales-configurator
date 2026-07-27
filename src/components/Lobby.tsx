@@ -303,6 +303,15 @@ export const Lobby: React.FC = () => {
                 {t('lobby.catalog_admin_btn', 'Administrar Catálogo')}
               </button>
             )}
+            {activeProfile?.role === 'admin' && (
+              <button
+                className="btn-secondary"
+                onClick={() => navigate('/docs')}
+                style={{ padding: '8px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 600 }}
+              >
+                {t('lobby.docs_btn', 'Documentación')}
+              </button>
+            )}
             {activeProfile && (
               <button
                 className="btn-secondary"
