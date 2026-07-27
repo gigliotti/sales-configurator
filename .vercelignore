@@ -4,7 +4,11 @@ dist
 .git
 .env
 supabase
-database
+# Se excluye el contenido de database/ (migraciones y seeds SQL) pero NO el
+# directorio en sí: el visor de /docs importa database/README.md?raw en tiempo
+# de build, y la sintaxis .gitignore no permite re-incluir un archivo si su
+# directorio padre está excluido (por eso `database/*` y no `database`).
+database/*
 !database/README.md
 *.log
 public/3d/Palletizer/v-stack_745.glb
